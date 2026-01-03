@@ -1,0 +1,3940 @@
+
+:root {
+   /* New Modern Color Palette */
+   --primary-color: #4A55A2;  /* A calm, modern blue */
+   --accent-color: #FFA500;   /* A friendly, vibrant orange */
+   --background-color: #F9F9FB; /* A very light, clean grey */
+   --surface-color: #FFFFFF;  /* For cards and headers */
+   --text-primary: #222222;   /* Dark, readable text */
+   --text-secondary: #6c757d; /* For captions and lighter text */
+   --border-color: #EEEEEE;   /* Light border for separation */
+   --white-color: #ffffff;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* General Reset */
+* {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+   font-family: 'Poppins', sans-serif;
+}
+
+body {
+   
+   background: linear-gradient(135deg, #fffbf0 0%, #e0f7fa 100%);
+   color: #333;
+}
+
+/* =================================================== */
+/* NEW LOGO-ONLY HEADER STYLES                         */
+/* =================================================== */
+
+/* 1. Main Wrapper */
+.new-site-header {
+   background: #fff;
+   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+   position: sticky;
+   top: 0;
+   z-index: 10000;
+}
+
+/* 2. Top Section: Logo Only (Centered) */
+.header-logo-row {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   padding: 10px 15px;
+   background: #fff;
+   border-bottom: 1px solid #f0f0f0;
+}
+
+.header-brand-img {
+   height: 70px; /* Adjust size as needed */
+   width: auto;
+   object-fit: contain;
+   display: block;
+}
+
+/* 3. Bottom Section: Navigation Bar (Desktop) */
+.header-nav-row {
+   background-color: #444; /* Dark Grey */
+   padding: 0;
+}
+
+.new-desktop-nav {
+   list-style: none;
+   display: flex;
+   justify-content: center;
+   margin: 0;
+   padding: 0;
+}
+
+.new-desktop-nav li a {
+   display: block;
+   padding: 14px 25px;
+   color: #fff;
+   text-decoration: none;
+   font-size: 1rem;
+   font-weight: 500;
+   text-transform: uppercase; /* Matches screenshot */
+   border-right: 1px solid rgba(255,255,255,0.1);
+}
+.new-desktop-nav li:first-child a { border-left: 1px solid rgba(255,255,255,0.1); }
+
+.new-desktop-nav li a:hover {
+   background-color: var(--primary-color, #4A55A2);
+}
+
+/* 4. Mobile Menu Bar (Matches Screenshot) */
+.mobile-nav-bar {
+   display: none; /* Hidden on desktop */
+   background-color: #444;
+   padding: 10px 20px;
+   color: #fff;
+   justify-content: space-between;
+   align-items: center;
+}
+
+.mobile-home-link {
+   color: #fff;
+   text-decoration: none;
+   font-size: 1.2rem;
+   font-weight: 500;
+}
+
+.mobile-menu-toggle {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   cursor: pointer;
+   font-size: 1.2rem;
+}
+
+/* 5. Responsive Rules */
+@media (max-width: 768px) {
+
+   .header-logo-row {
+      background: transparent;
+       padding: 5px 10px;
+   }
+   .header-brand-img {
+       height: 50px; /* Smaller logo on mobile */
+       padding: 0%;
+   }
+   
+   /* Hide Desktop Nav */
+   .new-desktop-nav {
+       display: none;
+   }
+   
+   /* Show Mobile Bar */
+   .mobile-nav-bar {
+       display: flex;
+   }
+   
+   /* Hide Sidebar Trigger if we use this new bar */
+   .hamburger { display: none !important; }
+}
+
+
+/* Hero Section */
+.hero-new {
+   height: 100vh;
+   position: relative;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   text-align: center;
+   color: var(--white-color);
+   overflow: hidden;
+}
+.hero-slideshow {
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   z-index: 1;
+}
+.hero-slideshow .slide {
+   position: absolute;
+   width: 100%;
+   height: 100%;
+   background-size: cover;
+   background-position: center;
+   opacity: 0;
+   animation: kenburns 30s infinite;
+}
+.hero-slideshow .slide:nth-child(1) { animation-delay: 0s; }
+.hero-slideshow .slide:nth-child(2) { animation-delay: 5s; }
+.hero-slideshow .slide:nth-child(3) { animation-delay: 10s; }
+.hero-slideshow .slide:nth-child(4) { animation-delay: 15s; }
+.hero-slideshow .slide:nth-child(5) { animation-delay: 20s; }
+.hero-slideshow .slide:nth-child(6) { animation-delay: 25s; }
+.hero-slideshow .slide:nth-child(7) { animation-delay: 30s; }
+.hero-slideshow .slide:nth-child(8) { animation-delay: 35s; }
+.hero-slideshow .slide:nth-child(9) { animation-delay: 40s; }
+
+@keyframes kenburns {
+   0%, 100% { opacity: 0; transform: scale(1.1); }
+   10%, 40% { opacity: 1; transform: scale(1); }
+   50% { opacity: 0; transform: scale(1.05); }
+}
+.hero-overlay {
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.5);
+   z-index: 2;
+}
+.hero-content {
+   position: relative;
+   z-index: 3;
+   width: 100%; /* Ensure it takes up full width */
+   padding: 2rem 1.5rem; /* Add padding on all sides */
+}
+.hero-title {
+   font-size: 3.5rem;
+   font-weight: 700;
+   margin-bottom: 1rem;
+   text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+}
+.hero-subtitle {
+   font-size: 1.5rem;
+   font-weight: 300;
+   margin-bottom: 2rem;
+}
+.hero-cta {
+   background-color: var(--accent-color);
+   color: var(--white-color);
+   padding: 1rem 2.5rem;
+   text-decoration: none;
+   font-weight: 600;
+   border-radius: 50px;
+   transition: background-color 0.3s ease, transform 0.3s ease;
+}
+.hero-cta:hover {
+   background-color: #e86a10;
+   transform: translateY(-3px);
+}
+
+@media (max-width: 768px) {
+   .hero-new {
+       height: auto;
+       aspect-ratio: 4 / 6;
+   }
+
+   .hero-new h1 {
+       font-size: 2.25rem;
+   }
+}
+
+/* About Section */
+section.about {
+   padding: 3rem 3rem;
+   text-align: center;
+   
+}
+
+.aboutus {
+   background: #ffffff;
+   padding: 0.5rem;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   margin-bottom: 1.5rem;
+}
+
+.about h2 {
+   font-size: 2.5rem;
+   margin-bottom: 1rem;
+}
+
+.about h3 {
+   font-size: 2rem;
+   margin-bottom: 1rem;
+   color: #e76910;
+}
+
+.about p {
+   font-size: 1.2rem;
+   line-height: 1.6;
+   margin-bottom: 1rem;
+}
+/* extra styles for about us section starts here */
+.about-section {
+   padding: 1rem 2rem;
+   text-align: center;
+}
+
+.about-section h2 {
+   font-size: 2.5rem;
+   margin-bottom: 1rem;
+   color: #333;
+}
+
+.about-section p {
+   font-size: 1.2rem;
+   line-height: 1.8;
+   margin-bottom: 2rem;
+   color: #555;
+}
+
+.about-icons {
+   display: flex;
+   justify-content: center;
+   gap: 2rem;
+   margin-top: 2rem;
+}
+
+.icon-card {
+   text-align: center;
+   max-width: 150px;
+}
+
+.icon-card img {
+   width: 96px;
+   height: 96px;
+   margin-bottom: 1rem;
+}
+
+
+
+.history-image {
+   width: 55%;
+   height: auto;
+   border-radius: 5px;
+   margin-top: 1rem;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.571);
+}
+
+.testimonials {
+   padding: 3rem 2rem;
+}
+
+.testimonials h2 {
+   font-size: 2.5rem;
+   margin-bottom: 2rem;
+}
+
+.testimonials-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+   gap: 2rem;
+   text-align: left;
+}
+
+.testimonial-card {
+   padding: 1.5rem;
+   border-radius: 8px;
+   background: #ffffff;
+   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.testimonial-card p {
+   color: #24282d;
+}
+
+.testimonial-card h4 {
+   margin-top: 1rem;
+   font-weight: bold;
+   color: #6a11cb;
+}
+
+#our-team {
+   padding: 10px 0;
+ }
+ #our-team .container {
+   max-width: 1450px;
+   margin: 0 auto;
+   text-align: center;
+ }
+ #our-team .team-photo img {
+   max-width: 60%;
+   height: auto;
+   border-radius: 8px;
+   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+ }
+ 
+
+/* Administration Section */
+.admin-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+   gap: 2rem;
+   justify-content: center;
+}
+.admin-card {
+   background: var(--white-color);
+   padding: 2rem;
+   margin-left: 2%;
+   margin-right: 2%;
+   border-radius: 20px;
+   text-align: center;
+   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+   transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.admin-card:hover {
+   transform: translateY(-10px);
+   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+}
+.admin-photo {
+   width: 120px;
+   height: 120px;
+   border-radius: 50%;
+   object-fit: cover;
+   margin: 0 auto 1.5rem auto;
+   border: 5px solid var(--background-color);
+}
+.admin-quote {
+   font-style: italic;
+   color: var(--light-text);
+   margin-bottom: 1rem;
+}
+.admin-name {
+   font-weight: 600;
+   margin-bottom: 0.25rem;
+}
+.admin-position {
+   color: var(--accent-color);
+   font-weight: 600;
+}
+
+@media (max-width: 768px) {
+   .admin-section h2 {
+       font-size: 1.8rem;
+   }
+   .history-image {
+       width: 100%;
+   }
+   #our-team .team-photo img {
+       max-width: 100%;
+       border-radius: 0%;
+   }
+}
+
+
+
+/* Gallery Section */
+section.gallery {
+   padding: 0rem 1rem;
+}
+
+.gallery h2 {
+   text-align: center;
+   font-size: 2.5rem;
+   margin-bottom: 2rem;
+   color: #252525;
+}
+
+@media (max-width: 768px) {
+   .gallery h2 {
+       font-size: 1.5rem;
+   }
+}
+
+.gallery-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+   gap: 1.5rem;
+}
+
+.gallery img {
+   width: 100%;
+   height: 250px; 
+   object-fit: cover; 
+   border-radius: 10px;
+   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+   transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.gallery img:hover {
+   transform: scale(1.2);
+   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+#media-modal {
+display: none;
+position: fixed;
+z-index: 1000;
+top: 0; left: 0;
+width: 100%; height: 100%;
+background: rgba(0,0,0,0.9);
+justify-content: center;
+align-items: center;
+}
+/* close button */
+#media-modal .close-btn {
+position: absolute;
+top: 20px; right: 30px;
+font-size: 2rem;
+color: white;
+cursor: pointer;
+}
+/* the content (img or video) */
+#media-modal .modal-content {
+max-width: 90%;
+max-height: 90%;
+}
+
+/* Video + Quote Section */
+.video-quote {
+   padding: 60px 0;
+}
+.video-quote .container {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   gap: 40px;
+   max-width: 1200px;
+   margin: 0 auto;
+}
+.video-quote .quote-text,
+.video-quote .quote-video {
+   flex: 1 1 300px;
+}
+
+
+@media screen and (max-width: 768px) {
+   .quote-text h2 {
+       font-size: 1.5rem;
+   }
+   .quote-text p {
+       font-size: 1rem;
+       margin: 1rem;
+   }
+}
+
+/* Stats Section */
+.stats {
+   padding: 40px 0;
+}
+.stats .container {
+   display: flex;
+   flex-wrap: wrap;
+   justify-content: space-between;
+   gap: 20px;
+   max-width: 1200px;
+   margin: 0 auto;
+}
+.stats .stat-box {
+   flex: 1 1 200px;
+   text-align: center;
+   padding: 30px;
+   border-radius: 8px;
+   color: #fff;
+}
+
+/* individual background colors */
+.stats .stat-box:nth-of-type(1) { background: #e76910; }
+.stats .stat-box:nth-of-type(2) { background: #6a11cb; }
+.stats .stat-box:nth-of-type(3) { background: #03a9f4; }
+.stats .stat-box:nth-of-type(4) { background: #8bc34a; }
+.stats .stat-box:nth-of-type(5) { background: #cc03f4; }
+.stats .stat-box:nth-of-type(6) { background: #ee1f71; }
+.stats .stat-box:nth-of-type(7) { background: #e76910; }
+.stats .stat-box:nth-of-type(8) { background: #8bc34a; }
+
+/* Footer */
+footer {
+   background-color: #333;
+   color: #fff;
+   padding: 2rem 1rem;
+   text-align: center;
+}
+
+footer a {
+   color: #6a11cb;
+   text-decoration: none;
+}
+
+footer a:hover {
+   text-decoration: underline;
+}
+
+
+/* Back-to-Top Button Styling */
+#backToTop {
+   position: fixed;
+   bottom: 2rem;
+   right: 2rem;
+   background-color: #484848;
+   color: white;
+   border: none;
+   border-radius: 50%;
+   width: 50px;
+   height: 50px;
+   font-size: 1.5rem;
+   cursor: pointer;
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+   opacity: 0;
+   visibility: hidden;
+   transition: opacity 0.3s ease, visibility 0.3s ease;
+   z-index: 1000;
+   justify-items: center;
+}
+
+#backToTop:hover {
+   background-color: #2575fc;
+   transform: scale(1.1);
+}
+
+#backToTop.show {
+   opacity: 1;
+   visibility: visible;
+}
+/* Sticky CTA Button Styling */
+#ctaButton {
+   position: fixed;
+   bottom: 2rem;
+   left: 2rem;
+   background-color: #f97b22;
+   color: white;
+   padding: 0.8rem 1.5rem;
+   border-radius: 30px;
+   text-decoration: none;
+   font-weight: bold;
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+   transition: background-color 0.3s ease, transform 0.2s ease;
+   z-index: 1000;
+}
+
+#ctaButton:hover {
+   background-color: #e76910;
+   transform: scale(1.1);
+}
+/* Footer Social Media Links */
+.social-links {
+   margin-top: 1rem;
+}
+
+.social-links a {
+   margin: 0 0.5rem;
+   display: inline-block;
+}
+
+.social-links img {
+   width: 30px;
+   height: 30px;
+   transition: transform 0.3s ease;
+}
+
+.social-links img:hover {
+   transform: scale(1.2);
+}
+
+
+/* General reset for box-sizing */
+*,
+*::before,
+*::after {
+box-sizing: border-box;
+}
+
+body {
+margin: 0;
+font-family: Arial, sans-serif;
+}
+
+
+/* Adjusting navigation for mobile */
+.nav-links {
+list-style: none;
+display: flex;
+gap: 1.5rem;
+justify-content: center;
+}
+
+.nav-links a {
+text-decoration: none;
+color: #fff;
+font-weight: 400;
+transition: color 0.3s ease;
+}
+
+/* For mobile screens */
+@media (max-width: 768px) {
+   .hero-title {
+      font-size: 2.5rem;
+  }
+  .hero-subtitle {
+      font-size: 1.2rem;
+  }
+
+.gallery-grid {
+   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Adjust gallery layout */
+}
+
+footer {
+   padding: 1.5rem 1rem;
+   text-align: center;
+}
+
+/* Header adjustments for mobile */
+header {
+   flex-direction: column; /* Stack elements vertically */
+   padding: 0.25rem; /* Reduce padding */
+   text-align: center;
+}
+
+.nav-links {
+   flex-direction: row; /* Display links horizontally */
+   justify-content: center; /* Center-align links */
+   gap: 0.5rem; /* Reduce spacing between links */
+   margin-top: 0.5rem; /* Add a bit of spacing below the logo */
+   flex-wrap: wrap; /* Allow wrapping to the next line if needed */
+}
+
+.nav-links a {
+   font-size: 0.8rem; /* Reduce font size for links */
+   padding: 0.4rem; /* Adjust padding for better fit */
+}
+
+.logo-container {
+   display: flex; 
+   align-items: center; 
+   gap: 0.5rem;
+   justify-content: flex-start;
+}
+
+
+.circular-logo {
+   width: 50px; 
+   height: 50px;
+   flex-shrink: 0; /
+}
+
+.text-logo {
+   font-size: 1.1rem;
+   white-space: nowrap;
+}
+
+/* General responsive styles  ####################################### */
+
+body {
+   font-size: 14px; /* Base font size for mobile */
+}
+
+h1 {
+   font-size: 1rem; 
+}
+
+h2, h3 {
+   font-size: 1.3rem; 
+}
+
+p, li, a {
+   font-size: 1rem; 
+}
+
+img, .icon {
+   max-width: 100%; 
+   height: auto;
+}
+
+.gallery-grid {
+   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+}
+
+.admissions-form, .admissions-guidelines, .admissions-contact {
+   padding: 1rem; 
+}
+
+/* Prevent overflow issues */
+section, div, img, table, button {
+   max-width: 100%; 
+   overflow: hidden; 
+}
+
+p, span, li, a {
+   word-wrap: break-word;
+   white-space: normal; 
+}
+
+#ctaButton {
+   padding: 0.70rem 1.3rem; 
+   font-size: 0.7rem; 
+
+}
+
+}
+
+.academic .hero {
+   background: url("GMPSimages/books-5937716_1920.webp") no-repeat center center/cover;
+   color: #f9f9f9;
+   text-align: center;
+   padding: 2rem;
+}
+
+.academic .hero h1 {
+   font-size: 2.8rem;
+   margin-bottom: 0.5rem; 
+}
+.academic .hero p {
+   font-size: 1.5rem;
+   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.775);
+}
+
+/* Section Styles */
+section {
+   padding: 2rem;
+   margin: 1rem 0;
+}
+
+h2 {
+   text-align: center;
+   font-size: 2.4rem;
+   margin-bottom: 1.5rem;
+}
+
+/* Curriculum Section */
+
+.academic .curriculum {
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.626);
+   margin: 1.5rem;
+   border-radius: 8px;
+   background: #dfefce;
+}
+
+.academic .curriculum p {
+   text-align: center;
+   font-size: 1.6rem;
+}
+
+.academic .curriculum ul {
+   list-style: none;
+   text-align: center;
+   font-size: 1.2rem;
+}
+
+/* class  levels sectionn */
+.academic .class-levels {
+   background-color: #f9f9f9;
+}
+
+.academic .class-levels ul{
+   font-size: 1.2rem;
+}
+
+.academic .class-levels p{
+   font-size: 1.6rem;
+}
+
+/* Teaching Methodology */
+.academic .methodology {
+   display: flex;
+   justify-content: space-around;
+   gap: 1.5rem;
+   background-color: #e3ddff;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   border-radius: 8px;
+}
+
+.academic .method {
+   text-align: center;
+}
+
+@media (max-width: 768px) {
+   .academic .hero h1 {
+       font-size: 2rem;
+   }
+   .academic .hero p {
+       font-size: 1.2rem;
+   }
+   .teaching-methodology .method p {
+       font-size: 0.7rem ;
+   }
+}
+
+
+.academic .method img {
+   width: 80px;
+   height: 80px;
+}
+
+/* Extra-Curricular Activities */
+.academic .activities {
+   display: flex;
+   justify-content: space-around;
+   gap: 1.5rem;
+}
+
+.academic .activity {
+   text-align: center;
+   font-size: 1.2rem;
+}
+
+.academic .activity img {
+   width: 80px;
+   height: 80px;
+}
+
+/* Achievements */
+.academic .achievements {
+   background-color: #044354;
+}
+
+.academic .toppers {
+   display: flex;
+   justify-content: space-around;
+   margin: 1rem 0;
+}
+
+.academic .topper img {
+   width: 100px;
+   height: 100px;
+   border-radius: 50%;
+   object-fit: cover;
+   margin-bottom: 0.5rem;
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.563);
+}
+
+.academic .achievements h2 {
+   color: #ffffff;
+}
+
+.academic .topper-section h3 {
+   font-size: 1.6rem;
+   color: #fff78b;
+}
+
+.academic .topper p {
+   font-size: 1.2rem;
+   color: #fff78b;
+}
+
+@media (max-width: 768px) {
+   .academic .topper p {
+       font-size: 0.85rem;
+       color: #fff78b;
+   }
+}    
+
+/* Facilities */
+.academic .facility {
+   display: flex;
+   align-items: center;
+   gap: 1rem;
+   margin: 2rem 0;
+   background-color: #b8d9ac;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   border-radius: 65px;
+}
+
+.academic .facility.reverse {
+   flex-direction: row-reverse;
+}
+
+.academic .facility p {
+   font-size: 1.8rem;
+}
+
+.academic .facility img {
+   width: 200px;
+   height: auto;
+   border-radius: 1px;
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0);
+}
+
+@media (max-width: 768px) {
+   .academic .facility{
+       border-radius: 10px;
+   }
+   .academic .facility p {
+       font-size: 1.2rem;
+   }
+   .academic h2 {
+       font-size: 1.9rem;
+   }
+   .academic .curriculum, .academic .class-levels {
+       p {
+       font-size: 1.3rem;
+       text-align: left;
+       }
+   }
+}
+
+
+
+/* css for the gallary page starts here */
+
+/* Hero Section */
+.gallery-page .hero {
+   text-align: center;
+   background: linear-gradient(to right, #0af3ff, #f44316);
+   color: white;
+   padding: 2rem 0;
+   font-family: 'Poppins', sans-serif;
+}
+
+.gallery-page .hero h1 {
+   font-size: 2.8rem;
+   margin: 0;
+}
+
+/* General Styles for Gallery */
+body {
+   font-family: Arial, sans-serif;
+   margin: 0;
+   padding: 0;
+   background-color: #f8f9fa;
+}
+
+/* Carousel Styles */
+
+.gallery-page .carousel {
+   position: relative;
+   overflow: hidden; 
+   width: 100%; 
+   height: 500px; 
+   display: flex; 
+   align-items: center; 
+   justify-content: center; 
+}
+
+.gallery-page .carousel img {
+   position: absolute;
+   max-width: 100%; 
+   max-height: 100%; 
+   width: auto; 
+   height: auto; 
+   opacity: 0; 
+   transition: opacity 0.5s ease, transform 0.5s ease; 
+}
+
+.gallery-page .carousel img.active {
+   opacity: 1; 
+   transform: translateX(0); 
+}
+
+.gallery-page .carousel img.hidden-left,
+.gallery-page .carousel img.hidden-right {
+   opacity: 0; 
+   pointer-events: none; 
+}
+
+.gallery-page .carousel img.hidden-left {
+   transform: translateX(-100%); 
+}
+
+.gallery-page .carousel img.hidden-right {
+   transform: translateX(100%); 
+}
+
+.gallery-page .carousel-controls {
+   position: absolute;
+   top: 50%;
+   left: 0;
+   right: 0;
+   display: flex;
+   justify-content: space-between;
+   transform: translateY(-50%);
+}
+
+.gallery-page .carousel-controls button {
+   background: rgba(0, 0, 0, 0.5);
+   color: white;
+   border: none;
+   padding: 10px 20px;
+   cursor: pointer;
+   border-radius: 5px;
+}
+
+/* Gallery Navigation */
+.gallery-page .gallery-nav {
+   text-align: center;
+   margin: 1rem 0;
+}
+
+.gallery-page .gallery-nav button {
+   background-color: #007bff;
+   color: white;
+   padding: 0.5rem 1rem;
+   margin: 0 0.5rem;
+   border: none;
+   border-radius: 5px;
+   cursor: pointer;
+}
+
+.gallery-page .gallery-nav button:hover {
+   background-color: #0056b3;
+}
+
+/* Gallery Grid */
+.gallery-page .gallery {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+   gap: 1rem;
+   padding: 1rem;
+}
+
+.gallery-page .gallery-item {
+   position: relative;
+   cursor: pointer;
+}
+
+.gallery-page .gallery-item img {
+   width: 100%;
+   height: auto;
+   border-radius: 10px;
+   transition: transform 0.3s ease;
+}
+
+.gallery-page .gallery-item img:hover {
+   transform: scale(1.05);
+}
+
+.gallery-page .caption {
+   position: absolute;
+   bottom: 10px;
+   left: 10px;
+   background-color: rgba(0, 0, 0, 0.5);
+   color: #fff;
+   padding: 5px 10px;
+   border-radius: 5px;
+   font-size: 0.9rem;
+}
+
+/* Updated Gallery Images */
+.gallery-page .gallery-item img, .gallery-item video {
+   width: 100%;
+   height: auto;
+   border-radius: 10px;
+   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+   transition: transform 0.3s ease;
+}
+
+.gallery-page .gallery-item img:hover, .gallery-item video:hover {
+   transform: scale(1.05);
+}
+
+.gallery-item .video-wrapper {
+   width: 100%;
+   margin-bottom: 0.5em;
+ }
+ .gallery-item iframe {
+   display: block;
+   max-width: 100%;
+ }
+ 
+/* Adjusting Video Styling */
+.gallery-page .gallery-item video {
+   max-height: 200px;
+   border-radius: 10px;
+}
+
+
+.gallery-page .carousel img {
+   border-radius: 10px;
+   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Admissions Page Styles */
+.admissions-hero {
+   background: linear-gradient(135deg, #ff0909, #2575fc);
+   color: #fff;
+   padding: 2rem;
+   text-align: center;
+}
+
+.admissions-hero h1 {
+   font-size: 2.8rem;
+   text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.773);
+   animation: fadeIn 2s ease-in-out;
+}
+
+.admissions-hero p {
+   font-size: 1.5rem;
+   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.775);
+   animation: fadeIn 2.5s ease-in-out;
+}
+
+.admissions-guidelines,
+.admissions-process,
+.admissions-form,
+.important-dates,
+.fee-structure,
+.admissions-contact {
+   margin: 2rem auto;
+   padding: 1.5rem;
+   background: #f9f9f9;
+   border-radius: 8px;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   max-width: 800px;
+}
+
+h2 {
+   margin-bottom: 1rem;
+   color: #333;
+}
+
+ul, ol {
+   padding-left: 1.5rem;
+   line-height: 1.6;
+}
+
+table {
+   width: 100%;
+   border-collapse: collapse;
+   margin-top: 1rem;
+}
+
+table th, table td {
+   border: 1px solid #ddd;
+   padding: 0.8rem;
+   text-align: center;
+}
+
+table th {
+   background-color: #6a11cb;
+   color: #fff;
+}
+
+.form label {
+   display: block;
+   margin-bottom: 0.5rem;
+   font-weight: bold;
+}
+
+.form input, .form select, .form textarea, .form button {
+   width: 100%;
+   padding: 0.8rem;
+   margin-bottom: 1rem;
+   border: 1px solid #ccc;
+   border-radius: 4px;
+}
+
+.form button {
+   background-color: #6a11cb;
+   color: #fff;
+   font-weight: bold;
+   cursor: pointer;
+   border: none;
+}
+
+.form button:hover {
+   background-color: #531a96;
+}
+
+/* FAQ Section Styling */
+.admissions-faq {
+   margin: 2rem auto;
+   padding: 1.5rem;
+   background: #f9f9f9;
+   border-radius: 8px;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   max-width: 800px;
+}
+
+.admissions-faq h2 {
+   text-align: center;
+   color: #333;
+   margin-bottom: 1.5rem;
+   font-size: 2rem;
+   font-weight: bold;
+}
+
+.faq-item {
+   margin-bottom: 1rem;
+   border-bottom: 1px solid #ddd;
+   padding-bottom: 1rem;
+}
+
+.faq-question {
+   font-size: 1.4rem;
+   color: #6a11cb;
+   cursor: pointer;
+   margin: 0;
+}
+
+.faq-question:hover {
+   text-decoration: underline;
+}
+
+.faq-answer {
+   display: none; /* Hide answers by default */
+   font-size: 1rem;
+   color: #555;
+   line-height: 1.6;
+   margin-top: 0.5rem;
+}
+
+.faq-answer a {
+   color: #6a11cb;
+   text-decoration: none;
+   font-weight: bold;
+}
+
+.faq-answer a:hover {
+   text-decoration: underline;
+}
+
+/* Events Page Styles */
+
+/* Hero Section */
+.events-hero {
+   background: url("GMPSimages/school-supplies-5541099_1920.jpg") no-repeat center center/cover;
+   color: #fff;
+   padding: 3rem 2rem;
+   text-align: center;
+}
+
+.events-hero h1 {
+   font-size: 3rem;
+   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+   animation: fadeIn 2s ease-in-out;
+}
+
+.events-hero p {
+   font-size: 1.5rem;
+   text-shadow: 1px 1px 3px rgb(0, 0, 0);
+   animation: fadeIn 2.5s ease-in-out;
+}
+
+@media (max-width: 768px) {
+   .events-hero p {
+       font-size: 1rem;
+       text-shadow: 1px 1px 3px rgb(0, 0, 0);
+       animation: fadeIn 2.5s ease-in-out;
+   }
+}    
+/* Announcements Section */
+.announcements-section {
+   padding: 2rem;
+}
+
+.announcements-section h2 {
+   text-align: center;
+   color: #333;
+   margin-bottom: 1.5rem;
+}
+
+.announcement {
+   background: #fbff91;
+   padding: 1rem;
+   border-radius: 8px;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   margin-bottom: 1.5rem;
+}
+
+.announcement h3 {
+   color: #531a96;
+   margin-bottom: 0.5rem;
+}
+
+/* Events Section */
+.events-section {
+   padding: 2rem;
+}
+
+.events-section h2 {
+   text-align: center;
+   color: #333;
+   margin-bottom: 1.5rem;
+}
+
+.event-card {
+   background: #82f4ca;
+   padding: 1rem;
+   border-radius: 8px;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   margin-bottom: 1.5rem;
+}
+
+.event-card h3 {
+   color: #531a96;
+   margin-bottom: 0.5rem;
+}
+
+/* Daily Updates Section */
+.daily-updates {
+   padding: 2rem;
+   background: #6a11cb;
+   color: #fff;
+}
+
+.daily-updates h2 {
+   text-align: center;
+   margin-bottom: 1.5rem;
+   color: #00ff04;
+}
+
+.updates-ticker {
+   display: flex;
+   flex-direction: column;
+   gap: 1rem;
+   font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+   .events-hero h1 {
+       font-size: 2rem;
+   }
+
+   .announcements-section, .events-section {
+       padding: 1rem;
+   }
+
+   .announcement, .event-card {
+       padding: 0.5rem;
+   }
+}
+
+/* contact page styles start from here */
+
+/* Hero Section */
+.hero-section {
+   background: url("GMPSimages/contact-us-2418235_1920.jpg") no-repeat center center/cover;
+   color: #fff;
+   text-align: center;
+   padding: 2rem;
+}
+.hero-section h1 {
+   font-size: 3rem;
+   margin-bottom: 0.5rem;
+   animation: fadeIn 2s ease-in-out;
+   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+.hero-section p {
+   font-size: 1.5rem;
+   margin: 0;
+   animation: fadeIn 2.5s ease-in-out;
+   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Contact Methods */
+.contact-methods {
+   padding: 2rem;
+   text-align: center;
+   background: #f9f9f9;
+}
+.contact-methods h2 {
+   margin-bottom: 1.5rem;
+   color: #333;
+}
+.contact-options {
+   display: flex;
+   flex-wrap: wrap;
+   justify-content: center;
+   gap: 1.5rem;
+}
+.contact-item {
+   background: #fff;
+   padding: 1rem;
+   border-radius: 8px;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+   width: 250px;
+}
+.contact-item h3 {
+   color: #531a96;
+   margin-bottom: 0.5rem;
+}
+.contact-item p a {
+   color: #2575fc;
+   text-decoration: none;
+}
+
+/* Address Section */
+.address-section {
+   text-align: center;
+   padding: 2rem;
+}
+.address-section h2 {
+   margin-bottom: 1rem;
+   color: #333;
+}
+.address-section p {
+   margin-bottom: 1rem;
+}
+.map {
+   margin: 1rem 0;
+   display: flex;
+   justify-content: center;
+}
+.address-section a {
+   color: #6a11cb;
+   text-decoration: none;
+   font-weight: bold;
+}
+
+/* Feedback Section */
+.feedback-section {
+   padding: 2rem;
+   background: #f4f4f4;
+   text-align: center;
+}
+.feedback-section h2 {
+   margin-bottom: 1rem;
+   color: #333;
+}
+.feedback-section form {
+   max-width: 600px;
+   margin: 0 auto;
+}
+.feedback-section label {
+   display: block;
+   margin-bottom: 0.5rem;
+   text-align: left;
+}
+.feedback-section input,
+.feedback-section textarea {
+   width: 100%;
+   padding: 0.8rem;
+   margin-bottom: 1rem;
+   border: 1px solid #ddd;
+   border-radius: 4px;
+}
+.feedback-section button {
+   padding: 0.8rem 2rem;
+   background: #6a11cb;
+   color: #fff;
+   border: none;
+   border-radius: 4px;
+   cursor: pointer;
+   font-size: 1rem;
+}
+.feedback-section button:hover {
+   background: #531a96;
+}
+
+/* Student login page General Styles */
+body {
+   font-family: 'Poppins', sans-serif;
+   margin: 0;
+   padding: 0;
+   display: flex;
+   flex-direction: column;
+}
+
+/* Student Login & Profile Page */
+.login-container, .profile-container {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   height: 80vh;
+   padding: 20px;
+}
+
+.login-box, .profile-box {
+   background: #fff;
+   padding: 2rem;
+   border-radius: 10px;
+   box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+   text-align: center;
+   width: 100%;
+   max-width: 350px;
+}
+
+.input-group {
+   margin-bottom: 1rem;
+   text-align: left;
+}
+
+.input-group label {
+   display: block;
+   font-weight: bold;
+}
+
+.input-group input, .input-group select {
+   width: 100%;
+   padding: 8px;
+   border: 1px solid #ddd;
+   border-radius: 5px;
+}
+
+.options {
+   display: flex;
+   justify-content: space-between;
+   font-size: 0.9rem;
+   margin-bottom: 1rem;
+}
+
+.login-container button, 
+.profile-container button {
+   width: 100%;
+   padding: 10px;
+   background: #007bff;
+   color: white;
+   border: none;
+   border-radius: 5px;
+   font-size: 1rem;
+   cursor: pointer;
+}
+
+.login-container button:hover, 
+.profile-container button:hover {
+   background: #0056b3;
+}
+
+/* Student Dashboard */
+.dashboard {
+   display: flex;
+}
+
+/* Sidebar Navigation */
+.sidebar {
+   width: 250px;
+   background: #2c3e50;
+   color: white;
+   padding: 20px;
+   min-height: 100vh;
+   position: fixed;
+   left: 0;
+   top: 0;
+   transition: transform 0.3s ease-in-out;
+   display: flex;
+   flex-direction: column;
+   justify-content: flex-end;  /* Move navigation options to the bottom */
+}
+
+/* Hide Sidebar on Mobile */
+.sidebar.hidden {
+   transform: translateX(-100%);
+}
+
+.sidebar ul {
+   list-style: none;
+   padding: 0;
+   margin-top: auto;  /* Push items to the bottom */
+}
+
+.sidebar ul li {
+   padding: 10px;
+   border-bottom: 1px solid #34495e;
+}
+
+.sidebar ul li a {
+   color: white;
+   text-decoration: none;
+   display: block;
+}
+
+.sidebar ul li button {
+   width: 100%;
+   padding: 10px;
+   background: red;
+   color: white;
+   border: none;
+   cursor: pointer;
+}
+
+/* Hamburger Menu Button (Mobile) */
+.hamburger {
+   display: none;
+   font-size: 30px;
+   cursor: pointer;
+   padding: 10px;
+   background: #2c3e50;
+   color: white;
+   border: none;
+   position: fixed;
+   left: 10px;
+   bottom: 10px;  /* Move hamburger button to bottom */
+   z-index: 1000;
+}
+
+/* Content Area */
+.content {
+   flex: 1;
+   padding: 20px;
+   margin-left: 250px;
+}
+
+/* Profile Card */
+.profile-card {
+   display: flex;
+   align-items: center;
+   gap: 20px;
+   flex-wrap: wrap;
+}
+
+.profile-pic {
+   width: 120px;
+   height: 120px;
+   border-radius: 50%;
+}
+
+
+/* 🔹 RESPONSIVE STYLES 🔹 */
+@media screen and (max-width: 768px) {
+   /* Adjust Dashboard Layout */
+   .dashboard {
+       flex-direction: column;
+   }
+
+   /* Show Hamburger Menu */
+   .hamburger {
+       display: block;
+   }
+
+   /* Hide Sidebar by Default */
+   .sidebar {
+       transform: translateX(-100%);
+       position: fixed;
+       height: 100%;
+       width: 220px;
+   }
+
+   .sidebar.show {
+       transform: translateX(0);
+   }
+
+   /* Adjust Content Layout */
+   .content {
+      margin-left: 0;
+      padding: 10px !important; /* Remove content padding */
+  }
+
+  /* FORCE sections to touch the screen edges */
+  .dashboard section {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      width: 100% !important;
+  }
+  
+  /* Add small padding to titles so they don't touch the edge */
+  .dashboard section h2, 
+  .dashboard section h3,
+  .dashboard section h4 {
+      padding-left: 15px;
+      padding-right: 15px;
+  }
+
+   /* Center Profile Elements */
+   .profile-card {
+       flex-direction: column;
+       align-items: center;
+       text-align: center;
+   }
+
+   /* Allow Tables to Scroll */
+   table {
+       display: block;
+       overflow-x: auto;
+       white-space: nowrap;
+   }
+}
+
+/* Profile Card Layout */
+.profile-card {
+   display: flex;
+   align-items: center;
+   gap: 20px;
+   flex-wrap: wrap;
+   background: #f9f9f9;
+   padding: 20px;
+   border-radius: 10px;
+   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Profile Picture */
+.profile-pic {
+   width: 120px;
+   height: 120px;
+   border-radius: 50%;
+   border: 3px solid #007bff;
+   object-fit: cover;
+}
+
+/* Profile Details */
+.profile-details {
+   flex: 1;
+}
+
+/* Responsive Adjustments */
+@media screen and (max-width: 768px) {
+   .profile-card {
+       flex-direction: column;
+       align-items: center;
+       text-align: center;
+   }
+}   
+ 
+   /* Ensure table containers do not overflow */
+.table-container {
+   width: 100%;
+   overflow-x: auto;
+   margin-bottom: 1rem;
+}
+table {
+   width: 100%;
+   max-width: 100%;
+   table-layout: fixed;
+   border-collapse: collapse;
+}
+th, td {
+   padding: 8px;
+   border: 1px solid #ddd;
+   text-align: center;
+   word-wrap: break-word;
+   white-space: normal;
+}
+/* Section headings */
+section h2 {
+   margin-top: 1.5rem;
+   margin-bottom: 1rem;
+   color: #333;
+}
+/* Single edit/save/delete buttons per table section */
+.table-actions {
+   margin-top: 10px;
+   text-align: right;
+}
+.table-actions button {
+   padding: 8px 16px;
+   margin-left: 5px;
+   background: #007bff;
+   color: #fff;
+   border: none;
+   border-radius: 4px;
+   cursor: pointer;
+}
+.table-actions button:hover {
+   background: #0056b3;
+}
+/* Manage Website Content styling */
+.content-editor {
+   background: #f9f9f9;
+   padding: 1rem;
+   border: 1px solid #ddd;
+   border-radius: 15px;
+   margin-top: 1rem;
+}  
+
+@media (max-width: 768px) {
+   table {
+     font-size: 0.8rem; /* Reduce font size on smaller screens */
+   }
+
+   section.about {
+       padding: 0rem 1.8rem;
+       text-align: center;
+       
+   }
+
+   .aboutus {
+       background: #ffffff;
+       padding: 0.5rem;
+       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+       margin-bottom: 1.5rem;
+   }
+
+   .about h2 {
+       font-size: 2rem;
+       margin-bottom: 1rem;
+   }
+
+   .about h3 {
+       font-size: 1.7rem;
+       margin-bottom: 1rem;
+       color: #e76910;
+   }
+
+   .about p {
+       font-size: 1rem;
+       line-height: 1.6;
+       margin-bottom: 1rem;
+   }
+ }    
+/* Dashboard Styles */
+#masterDashboard {
+margin-bottom: 2rem;
+}
+
+.dashboard-stats {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: 1.5rem;
+margin-bottom: 1.5rem;
+}
+
+.stat-card {
+background: #ffffff;
+padding: 1.5rem;
+border-radius: 8px;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+text-align: center;
+}
+
+.stat-card h3 {
+margin: 0 0 0.5rem 0;
+color: #6a11cb;
+font-size: 1.2rem;
+}
+
+.stat-card p {
+margin: 0;
+font-size: 2.5rem;
+font-weight: 600;
+color: #333;
+}
+
+.dashboard-alert {
+background: #fff3cd;
+border: 1px solid #ffeeba;
+color: #856404;
+padding: 1.5rem;
+border-radius: 8px;
+text-align: center;
+}
+
+.dashboard-alert h3 {
+margin-top: 0;
+}
+
+.dashboard-alert a {
+display: inline-block;
+margin-top: 1rem;
+padding: 0.5rem 1rem;
+background: #ffc107;
+color: #212529;
+text-decoration: none;
+font-weight: bold;
+border-radius: 5px;
+transition: background-color 0.2s;
+}
+
+.dashboard-alert a:hover {
+background-color: #e0a800;
+}
+
+/* --- Sticky WhatsApp Button (Corrected) --- */
+.whatsapp-sticky-button {
+   position: fixed;
+   /* Vertically center the button on the screen */
+   top: 50%;
+   transform: translateY(-50%);
+   /* Position it on the right edge */
+   right: 0rem;
+   /* Define a clear, small size */
+   width: 50px;
+   height: 50px;
+   background-color: #25D366;
+   border-top-left-radius: 25%;
+   border-bottom-left-radius: 25%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+   z-index: 1000;
+   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (max-width: 768px) {
+   .whatsapp-sticky-button {
+      right: orem; 
+      width: 40px;
+      height: 40px;
+   }
+}
+
+/* This is a critical fix to ensure the icon inside behaves */
+.whatsapp-sticky-button img {
+   width: 30px;
+   height: 30px;
+   /* Prevent the image from growing larger than its container */
+   max-width: 100%;
+   max-height: 100%;
+}
+
+.whatsapp-sticky-button:hover {
+   /* Adjust the transform to account for the vertical centering */
+   transform: translateY(-50%) scale(1.1);
+   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Back to Top Button Styling (Ensure it's below WhatsApp) --- */
+#backToTop {
+  position: fixed;
+  bottom: 2rem; /* Keep it at the bottom */
+  right: 2rem;
+  background-color: #48484898;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 1000;
+  justify-items: center;
+}
+
+
+
+/* New Bottom Navigation Bar */
+.bottom-nav {
+   position: fixed;
+   bottom: 0;
+   left: 0;
+   width: 100%;
+   height: 70px; /* Taller for a modern feel */
+   background-color: var(--surface-color);
+   display: flex;
+   justify-content: space-around;
+   align-items: start; /* Aligns icons to the top of the bar */
+   padding-top: 7px;
+   box-shadow: 0 -2px 5px rgba(0,0,0,0.08); /* Stronger shadow */
+   z-index: 1001;
+   border-top: 1px solid var(--border-color);
+}
+.bottom-nav .nav-item {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   text-decoration: none;
+   color: var(--text-secondary);
+   gap: 4px; /* Space between icon and label */
+
+   /* New properties for sizing and transitions */
+   height: 48px;
+   padding: 4px 12px;
+   border-radius: 20px; /* This allows the pill shape */
+   margin-top: -4px; /* Adjusts vertical alignment */
+   transition: all 0.2s ease-in-out; /* Transition all properties */
+}
+.bottom-nav .nav-item .icon {
+   font-size: 24px;
+}
+.bottom-nav .nav-item .label {
+   font-size: 0.75rem; /* Small, app-like text */
+   font-weight: 500;
+}
+
+/* Active state for bottom nav */
+.bottom-nav .nav-item.active {
+   color: var(--white-color); /* White text */
+   background-color: rgb(164, 72, 255); /* Blue "pill" background */
+   font-weight: 600;
+}
+
+/* Add padding to the body to prevent content from being
+  hidden behind the new bottom nav */
+body {
+   padding-bottom: 80px; /* A bit more than the nav height */
+}
+
+
+/* Show the OLD header on desktop,
+  and hide the NEW app headers */
+@media (min-width: 769px) {
+   .app-header,
+   .home-app-header,
+   .secondary-nav,
+   .bottom-nav {
+       display: none; /* Hide all new app UI on desktop */
+   }
+   
+   /* Re-set body padding for desktop */
+   body {
+       padding-bottom: 0;
+   }
+}
+
+
+/* =================================================== */
+/* NEW APP-LIKE HOME PAGE STYLES (ADD AT END)          */
+/* =================================================== */
+
+/* 1. Body & General Tweaks */
+.app-body {
+   background-color: var(--background-color); /* Kills the "white white white" */
+}
+
+/* Make the hero section shorter on mobile */
+@media (max-width: 768px) {
+   .hero-new {
+       height: 60vh; /* Shorter than 100vh */
+       min-height: 400px;
+   }
+   .hero-cta {
+       font-size: 0.8rem; /* Slightly smaller text */
+      }
+}
+
+/* 2. Quick Links Grid */
+.quick-links-grid {
+   display: grid;
+   grid-template-columns: 1fr 1fr; /* 2x2 grid */
+   gap: 15px;
+   padding: 20px 15px;
+}
+.quick-link-card {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   padding: 25px 15px;
+   border-radius: 12px;
+   text-decoration: none;
+   background-color: var(--card-color, var(--primary-color));
+   color: var(--white-color);
+   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.quick-link-card:hover {
+   transform: translateY(-5px);
+   box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+.quick-link-card .icon {
+   font-size: 36px;
+}
+.quick-link-card .label {
+   font-size: 0.9rem;
+   font-weight: 600;
+   margin-top: 8px;
+   text-align: center;
+}
+
+/* 3. Horizontal Scroll Section */
+.horizontal-scroll-section {
+   padding: 0 0 20px 0; /* No top padding */
+   margin: 0;
+}
+.section-header {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 15px 15px 10px 15px;
+}
+.section-header h2 {
+   font-size: 1.3rem;
+   font-weight: 600;
+   color: var(--text-primary);
+   margin: 0;
+}
+.view-all-link {
+   text-decoration: none;
+   color: var(--primary-color);
+   font-size: 0.9rem;
+   font-weight: 500;
+}
+
+.scroll-container {
+   display: flex;
+   overflow-x: auto;
+   padding: 0 15px 15px 15px;
+   gap: 15px;
+   /* Hide scrollbar */
+   -ms-overflow-style: none;  /* IE and Edge */
+   scrollbar-width: none;  /* Firefox */
+}
+.scroll-container::-webkit-scrollbar {
+   display: none; /* Chrome, Safari, Opera */
+}
+
+/* 4. Event Preview Card */
+.event-preview-card {
+   flex: 0 0 280px; /* Fixed width, don't shrink */
+   display: flex;
+   align-items: center;
+   background: var(--surface-color);
+   border-radius: 12px;
+   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+   padding: 15px;
+   gap: 15px;
+   text-decoration: none;
+   border: 1px solid var(--border-color);
+}
+.event-preview-card .event-date {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   background-color: var(--background-color);
+   border-radius: 8px;
+   padding: 8px 12px;
+}
+.event-preview-card .event-date .month {
+   font-size: 0.8rem;
+   font-weight: 600;
+   color: var(--primary-color);
+   text-transform: uppercase;
+}
+.event-preview-card .event-date .day {
+   font-size: 1.4rem;
+   font-weight: 600;
+   color: var(--text-primary);
+}
+.event-preview-card .event-info h3 {
+   font-size: 1rem;
+   font-weight: 600;
+   color: var(--text-primary);
+   margin: 0 0 4px 0;
+}
+.event-preview-card .event-info p {
+   font-size: 0.85rem;
+   color: var(--text-secondary);
+   margin: 0;
+   line-height: 1.4;
+}
+
+/* 5. Gallery Preview Card */
+.gallery-scroll {
+   gap: 10px;
+}
+.gallery-preview-card {
+   flex: 0 0 140px; /* Fixed width */
+   height: 180px;
+   border-radius: 12px;
+   overflow: hidden;
+   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+   border: 1px solid var(--border-color);
+}
+.gallery-preview-card img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+   transition: transform 0.2s ease;
+}
+.gallery-preview-card:hover img {
+   transform: scale(1.05);
+}
+
+/* 6. Restyled Content Card (for About/Mission) */
+.content-card-section {
+   padding: 20px 15px;
+   margin: 0 15px 20px 15px;
+   background: var(--surface-color);
+   border-radius: 12px;
+   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+   border: 1px solid var(--border-color);
+}
+.content-card-section h2 {
+   font-size: 1.3rem;
+   font-weight: 600;
+   color: var(--text-primary);
+   margin-bottom: 8px;
+   text-align: left;
+}
+.content-card-section h3 {
+   font-size: 1.1rem;
+   font-weight: 500;
+   color: var(--text-secondary);
+   margin-bottom: 15px;
+   text-align: left;
+}
+.content-card-section p {
+   font-size: 0.95rem;
+   color: var(--text-secondary);
+   line-height: 1.6;
+   margin-bottom: 10px;
+}
+/* Keep original about-icons styles */
+.content-card-section .about-icons {
+   margin-top: 15px;
+}
+
+
+/* 8. On Desktop, hide new app layout */
+@media (min-width: 769px) {
+   .app-body {
+       background: linear-gradient(135deg, #fffbf0 0%, #e0f7fa 100%); /* Restore original body bg */
+   }
+
+   .quick-links-grid,
+   .horizontal-scroll-section,
+   .content-card-section {
+       display: none;
+   }
+}
+
+/* =================================================== */
+/* NEW TWA-ONLY CARD STYLES (ADD AT END)               */
+/* =================================================== */
+
+/* 1. New Announcement Card (for horizontal scroll) */
+.announcement-card {
+   flex: 0 0 280px; /* Fixed width */
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   background: var(--surface-color);
+   border-radius: 12px;
+   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+   padding: 15px;
+   text-decoration: none;
+   border: 1px solid var(--border-color);
+}
+.announcement-card h3 {
+   font-size: 1rem;
+   font-weight: 600;
+   color: var(--text-primary);
+   margin: 0;
+}
+.announcement-card p {
+   font-size: 0.85rem;
+   color: var(--text-secondary);
+   margin: 0;
+   line-height: 1.4;
+}
+.placeholder-card {
+   padding: 20px;
+   color: var(--text-secondary);
+}
+
+/* 2. TWA Faculty Card */
+.app-card-image {
+   width: 100%;
+   height: auto;
+   border-radius: 12px;
+   object-fit: cover;
+}
+
+/* 3. TWA Admin Thoughts Card */
+.admin-thought-card {
+   flex: 0 0 245px; /* Fixed width */
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   text-align: center;
+   background: var(--surface-color);
+   border-radius: 12px;
+   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+   padding: 20px 15px;
+   border: 1px solid var(--border-color);
+}
+.admin-photo-app {
+   width: 80px;
+   height: 80px;
+   border-radius: 50%;
+   object-fit: cover;
+   margin-bottom: 10px;
+   border: 3px solid var(--background-color);
+}
+.admin-thought-card h4 {
+   font-size: 1rem;
+   font-weight: 600;
+   color: var(--text-primary);
+   margin: 0;
+}
+.admin-thought-card span {
+   font-size: 0.8rem;
+   font-weight: 500;
+   color: var(--primary-color);
+   margin-bottom: 10px;
+}
+.admin-thought-card p {
+   font-size: 0.85rem;
+   color: var(--text-secondary);
+   font-style: italic;
+   margin: 0;
+   line-height: 1.5;
+}
+
+/* 4. TWA Stats Grid */
+.stats-grid-section {
+   padding: 0 15px 20px 15px;
+}
+.stats-grid {
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 15px;
+}
+.stat-card-app {
+   background: var(--surface-color);
+   border-radius: 12px;
+   padding: 20px 15px;
+   text-align: center;
+   border: 1px solid var(--border-color);
+   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.stat-card-app h3 {
+   font-size: 1.8rem;
+   font-weight: 600;
+   color: var(--primary-color);
+   margin: 0 0 5px 0;
+}
+.stat-card-app p {
+   font-size: 0.9rem;
+   color: var(--text-secondary);
+   margin: 0;
+}
+
+/* 5. TWA Contact Card */
+.contact-card-app {
+   display: flex;
+   justify-content: space-around;
+   gap: 10px;
+   margin-bottom: 15px;
+}
+.contact-item-app {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 8px;
+   text-decoration: none;
+   padding: 10px;
+   border-radius: 12px;
+   transition: background-color 0.2s ease;
+}
+.contact-item-app:hover {
+   background-color: var(--background-color);
+}
+.contact-item-app .icon {
+   font-size: 28px;
+   color: var(--white-color);
+   padding: 12px;
+   border-radius: 50%;
+}
+.contact-item-app:nth-child(1) .icon { background-color: #34A853; } /* Call */
+.contact-item-app:nth-child(2) .icon { background-color: #25D366; } /* WhatsApp */
+.contact-item-app:nth-child(3) .icon { background-color: #EA4335; } /* Email */
+
+.contact-item-app .label {
+   font-size: 0.85rem;
+   font-weight: 500;
+   color: var(--text-primary);
+}
+.address-app {
+   font-size: 0.9rem;
+   color: var(--text-secondary);
+   line-height: 1.5;
+   text-align: center;
+   margin: 0;
+}
+
+/* 6. TWA Share Card */
+.share-card-app {
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+}
+.share-button, .website-link-app {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 10px;
+   padding: 15px;
+   border-radius: 12px;
+   text-decoration: none;
+   font-size: 1rem;
+   font-weight: 600;
+   border: none;
+   cursor: pointer;
+   transition: background-color 0.2s ease;
+}
+.share-button {
+   background-color: var(--primary-color);
+   color: var(--white-color);
+}
+.share-button:hover {
+   background-color: #3a448a; /* Darker primary */
+}
+.website-link-app {
+   background-color: var(--background-color);
+   color: var(--text-primary);
+}
+.website-link-app:hover {
+   background-color: #e9e9ed; /* Darker background */
+}
+
+
+/* =================================================== */
+/* FINAL TWEAKS FOR TWA (ADD AT END)                   */
+/* =================================================== */
+
+
+
+
+/* 3. Make the last stat card span 2 columns */
+/* This only applies if the last card is an ODD number (like 5) */
+.stats-grid-twa .stat-card-app:last-child:nth-child(odd) {
+   grid-column: span 2;
+}
+
+/* =================================================== */
+/* DESKTOP HEADER FIX (ADD AT END)                     */
+/* =================================================== */
+
+/* Force desktop header links to be visible (Dark Grey/Black) */
+@media (min-width: 769px) {
+   header .nav-links a {
+       color: #333333 !important; /* Dark text for visibility */
+       font-weight: 500;
+   }
+   
+   header .nav-links a:hover {
+       color: var(--primary-color) !important; /* Blue on hover */
+   }
+
+   /* Ensure header background is white and has a shadow */
+   header {
+       background-color: #ffffff !important;
+       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+   }
+   
+   /* Fix logo text color on desktop */
+   header .text-logo {
+       color: #333333 !important;
+   }
+}
+
+/* =================================================== */
+/* PHASE 2: POSTING SYSTEM & WORK FEED                 */
+/* =================================================== */
+
+/* --- Posting Form Styles (Teacher Side) --- */
+.post-creator-section {
+   background: #fff;
+   padding: 20px;
+   border-radius: 12px;
+   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+   margin-bottom: 30px;
+   border: 1px solid #e0e0e0;
+}
+.post-form-group {
+   margin-bottom: 20px;
+   padding: 15px;
+   background: #f8f9fa;
+   border-radius: 8px;
+   border: 1px solid #eee;
+}
+.post-form-group h4 {
+   margin-top: 0;
+   color: var(--primary-color);
+   border-bottom: 2px solid #e0e0e0;
+   padding-bottom: 8px;
+   margin-bottom: 15px;
+}
+.repeater-row {
+   background: #fff;
+   padding: 10px;
+   margin-bottom: 10px;
+   border-radius: 6px;
+   border: 1px solid #ddd;
+   position: relative;
+}
+.repeater-row input[type="text"], 
+.repeater-row textarea {
+   width: 100%;
+   padding: 8px;
+   margin-bottom: 8px;
+   border: 1px solid #ccc;
+   border-radius: 4px;
+   font-family: inherit;
+}
+.add-row-btn {
+   background: #28a745;
+   color: white;
+   border: none;
+   padding: 5px 10px;
+   border-radius: 4px;
+   cursor: pointer;
+   font-size: 0.9rem;
+}
+.remove-row-btn {
+   background: #dc3545;
+   color: white;
+   border: none;
+   padding: 2px 8px;
+   border-radius: 4px;
+   cursor: pointer;
+   font-size: 0.8rem;
+   position: absolute;
+   top: 5px;
+   right: 5px;
+}
+
+/* Defaulter Checklist */
+.student-checklist {
+   max-height: 150px;
+   overflow-y: auto;
+   border: 1px solid #ccc;
+   padding: 10px;
+   background: #fff;
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 5px;
+}
+.checkbox-item {
+   font-size: 0.9rem;
+   display: flex;
+   align-items: center;
+   gap: 5px;
+}
+
+/* --- Work Feed Styles (Student Side) --- */
+.work-feed-container {
+   max-width: 800px;
+   margin: 0 auto;
+   padding: 20px 15px;
+}
+.date-divider {
+   text-align: center;
+   margin: 25px 0 15px;
+   position: relative;
+}
+.date-divider span {
+   background: #e3ddff;
+   color: var(--primary-color);
+   padding: 5px 15px;
+   border-radius: 20px;
+   font-size: 0.85rem;
+   font-weight: 600;
+}
+.work-post-card {
+   background: #fff;
+   border-radius: 12px;
+   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+   margin-bottom: 20px;
+   overflow: hidden;
+   border: 1px solid #eee;
+}
+.post-header {
+   background: #f8f9fa;
+   padding: 10px 15px;
+   border-bottom: 1px solid #eee;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+}
+.teacher-badge {
+   font-size: 0.8rem;
+   background: var(--primary-color);
+   color: white;
+   padding: 2px 8px;
+   border-radius: 4px;
+}
+.post-content {
+   padding: 15px;
+}
+.post-section {
+   margin-bottom: 15px;
+   padding-bottom: 15px;
+   border-bottom: 1px dashed #eee;
+}
+.post-section:last-child {
+   border-bottom: none;
+   margin-bottom: 0;
+   padding-bottom: 0;
+}
+.section-label {
+   font-size: 0.75rem;
+   text-transform: uppercase;
+   letter-spacing: 1px;
+   color: #888;
+   margin-bottom: 5px;
+   display: block;
+}
+.work-heading {
+   font-size: 1.1rem;
+   font-weight: 600;
+   color: #333;
+   margin-bottom: 5px;
+}
+.work-details {
+   color: #555;
+   font-size: 0.95rem;
+   line-height: 1.5;
+   white-space: pre-line; /* Preserves line breaks */
+}
+.attachments-grid {
+   display: flex;
+   gap: 10px;
+   margin-top: 10px;
+   overflow-x: auto;
+   padding-bottom: 5px;
+}
+.attachment-thumb {
+   height: 60px;
+   width: auto;
+   border-radius: 4px;
+   border: 1px solid #ddd;
+   cursor: pointer;
+}
+
+/* =================================================== */
+/* BATCH 1 FIXES: LAYOUT & SCROLLING                   */
+/* =================================================== */
+
+/* 1. Fix Body/Nav Overflow */
+html, body {
+   max-width: 100%;
+   overflow-x: hidden; /* Stops the whole page from side-scrolling */
+}
+
+/* 2. Fix Card Content Cut-off */
+.work-feed-container {
+   width: 100%;
+   box-sizing: border-box; /* Include padding in width calculations */
+   padding: 20px 10px; /* Slightly reduce side padding for mobile */
+}
+
+.work-post-card {
+   width: 100%;
+   box-sizing: border-box;
+   max-width: 100%;
+}
+
+.post-content {
+   width: 100%;
+   box-sizing: border-box;
+   word-wrap: break-word;      /* Forces long words to break */
+   overflow-wrap: break-word;  /* Modern standard */
+}
+
+/* 3. Fix Table Scrolling & Layout */
+.defaulter-scroll-container {
+   width: 100%;
+   max-width: 100%;
+   overflow-x: auto; /* Only the table scrolls, not the page */
+   -webkit-overflow-scrolling: touch; /* Smooth scroll on mobile */
+   display: block;
+   padding-bottom: 10px;
+   margin-top: 10px;
+}
+
+.defaulter-table {
+   width: 100%;
+   border-collapse: collapse;
+   table-layout: auto; /* Allow columns to size naturally */
+}
+
+/* Style the headers (Subject Names) */
+.defaulter-table th {
+   background-color: #ffebee;
+   color: #c62828;
+   padding: 10px;
+   font-size: 0.85rem;
+   white-space: nowrap; /* Keep subject names on one line */
+   border: 1px solid #ffcdd2;
+   text-align: center;
+   min-width: 120px;
+}
+
+/* Style the student lists */
+.defaulter-table td {
+   vertical-align: top; /* Start lists from top */
+   padding: 10px;
+   border: 1px solid #eee;
+   min-width: 120px;
+   background: #fff;
+}
+/* Compact Mobile Layout for Dashboards */
+@media (max-width: 768px) {
+   .dashboard .content {
+       padding: 10px 5px; /* Very little padding */
+   }
+   .profile-card {
+       padding: 15px;
+       margin-bottom: 15px;
+   }
+   /* Hide desktop-only logout button on sidebar if it takes too much space, 
+      but keeping it is usually safer for UX */
+}
+
+/* =================================================== */
+/* MODERN FROSTED SIDEBAR (BATCH 3 FIX)                */
+/* =================================================== */
+
+.hamburger {
+   display: none !important;
+}
+
+@media (max-width: 768px) {
+   .sidebar {
+       position: fixed;
+       top: 0;
+       left: 0;
+       height: 100vh;
+       width: 280px; /* Slightly wider for better spacing */
+       
+       /* Frosted Glass Effect - Dark Grey Theme */
+       background: rgba(33, 37, 41, 0.8); /* Dark grey with opacity */
+       backdrop-filter: blur(20px); /* The blur effect */
+       -webkit-backdrop-filter: blur(15px); /* Safari support */
+       
+       z-index: 9999 !important; /* Maximum z-index to cover everything */
+       transform: translateX(-100%);
+       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth easing */
+       padding-top: 80px; 
+       box-shadow: 5px 0 25px rgba(0,0,0,0.3);
+       border-right: 1px solid rgba(255,255,255,0.1); /* Subtle glass border */
+   }
+
+   .sidebar.show {
+       transform: translateX(0);
+   }
+
+   /* Custom Close Button */
+   .sidebar::before {
+       content: '✕';
+       position: absolute;
+       top: 25px;
+       right: 25px;
+       color: rgba(255,255,255,0.6);
+       font-size: 24px;
+       cursor: pointer;
+       padding: 10px;
+       transition: color 0.2s;
+   }
+   .sidebar::before:hover {
+       color: #fff;
+   }
+
+   /* Modern Item Styling */
+   .sidebar ul {
+       padding: 0 15px;
+       list-style: none;
+   }
+
+   .sidebar ul li {
+       border-bottom: none; /* Remove old borders */
+       margin-bottom: 8px;
+   }
+
+   .sidebar ul li a, 
+   .sidebar ul li button {
+       display: flex;
+       align-items: center;
+       width: 100%;
+       padding: 14px 20px;
+       font-size: 1.05rem;
+       font-weight: 500;
+       color: #ecf0f1; /* Off-white text */
+       text-decoration: none;
+       background: transparent;
+       border: none;
+       border-radius: 12px; /* Rounded pill shape */
+       transition: all 0.2s ease;
+       text-align: left;
+   }
+
+   /* Active/Hover State */
+   .sidebar ul li a:hover, 
+   .sidebar ul li button:hover {
+       background: rgba(255, 255, 255, 0.15); /* Light glass highlight */
+       color: #fff;
+       transform: translateX(5px); /* Slight slide effect */
+   }
+   
+   /* Logout Button Specifics */
+   .sidebar ul li button {
+       color: #ff6b6b; /* Red tint for logout */
+   }
+   .sidebar ul li button:hover {
+       background: rgba(255, 107, 107, 0.15);
+       color: #ff8787;
+   }
+}
+/* Real Close Button for Sidebar */
+.close-sidebar-btn {
+   position: absolute;
+   top: 20px;
+   right: 20px;
+   background: none;
+   border: none;
+   color: rgba(255,255,255,0.7);
+   font-size: 30px;
+   cursor: pointer;
+   padding: 5px;
+   line-height: 1;
+   z-index: 10001; /* Above the sidebar background */
+   transition: color 0.2s;
+}
+.close-sidebar-btn:hover {
+   color: #fff;
+}
+/* Remove the old pseudo-element if it exists */
+.sidebar::before {
+   display: none !important;
+}
+
+/* =================================================== */
+/* BATCH 3: GLOBAL MODERN UI OVERHAUL                  */
+/* =================================================== */
+
+/* 1. Modern Table Design (Global) */
+.table-container {
+   background: #fff;
+   border-radius: 12px;
+   box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+   border: 1px solid #f0f0f0;
+   overflow: hidden; /* For rounded corners */
+   margin-bottom: 20px;
+}
+
+table {
+   width: 100%;
+   border-collapse: collapse;
+   font-size: 0.95rem;
+}
+
+/* Header Styling */
+th {
+   background-color: var(--primary-color); /* Uses your blue/purple */
+   color: #fff;
+   font-weight: 600;
+   text-transform: uppercase;
+   font-size: 0.85rem;
+   letter-spacing: 0.5px;
+   padding: 15px;
+   border: none;
+}
+
+/* Cell Styling */
+td {
+   padding: 12px 15px;
+   border-bottom: 1px solid #f0f0f0 !important;
+
+   color: #444;
+   vertical-align: middle;
+}
+
+/* Row Hover Effect */
+tr:hover td {
+   background-color: #f8f9fa;
+}
+
+/* 2. Modern Form Inputs (Global) */
+input[type="text"], 
+input[type="password"], 
+input[type="date"], 
+input[type="number"], 
+input[type="email"], 
+select, 
+textarea {
+   width: 100%;
+   padding: 12px 15px;
+   border: 1px solid #e0e0e0;
+   border-radius: 8px; /* Rounded corners */
+   background-color: #fcfcfc;
+   font-size: 0.95rem;
+   transition: all 0.2s ease;
+   box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+   margin-bottom: 10px;
+}
+
+input:focus, select:focus, textarea:focus {
+   border-color: var(--primary-color);
+   background-color: #fff;
+   outline: none;
+   box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.1); /* Glow effect */
+}
+
+/* 3. Modern Buttons */
+button {
+   padding: 10px 20px;
+   border-radius: 8px;
+   font-weight: 500;
+   letter-spacing: 0.5px;
+   cursor: pointer;
+   transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+button:active {
+   transform: scale(0.98);
+}
+
+/* 4. Admin/Profile Headers */
+h2, h3 {
+   color: var(--text-primary);
+   font-weight: 700;
+   margin-bottom: 20px;
+}
+
+
+/* =================================================== */
+/* EVENTS PAGE MODERN STYLING                          */
+/* =================================================== */
+
+.events-page-container {
+   max-width: 1200px;
+   margin: 0 auto;
+   padding: 20px;
+}
+
+.modern-events-section {
+   margin-bottom: 40px;
+}
+
+.section-title {
+   font-size: 1.5rem;
+   color: var(--primary-color);
+   margin-bottom: 20px;
+   border-left: 5px solid var(--accent-color);
+   padding-left: 15px;
+}
+
+/* Grid Layout */
+.modern-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+   gap: 20px;
+}
+
+/* Base Card Style */
+.modern-card {
+   background: #fff;
+   border-radius: 12px;
+   overflow: hidden;
+   box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+   border: 1px solid #eee;
+   transition: transform 0.2s ease;
+   position: relative;
+}
+.modern-card:hover {
+   transform: translateY(-5px);
+}
+
+/* Image container (Maintains aspect ratio) */
+.card-image-container {
+   width: 100%;
+   height: 200px;
+   overflow: hidden;
+}
+.card-image-container.small-height {
+   height: 150px; /* Smaller for daily updates */
+}
+.card-image-container img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+   transition: transform 0.3s ease;
+}
+.modern-card:hover .card-image-container img {
+   transform: scale(1.05);
+}
+
+.card-content {
+   padding: 15px;
+}
+.card-content h3 {
+   margin: 0 0 10px 0;
+   color: #333;
+   font-size: 1.2rem;
+}
+.card-content p {
+   color: #666;
+   line-height: 1.6;
+   font-size: 0.95rem;
+   margin: 0;
+}
+
+/* Specific Styles */
+.announcement-style {
+   border-top: 4px solid #ffc107; /* Yellow top border */
+}
+.update-style {
+   border-top: 4px solid #28a745; /* Green top border */
+}
+.event-style {
+   border-top: 4px solid var(--primary-color);
+}
+
+/* Event Date Badge */
+.event-date-badge {
+   position: absolute;
+   top: 5px;
+   right: 5px;
+   background: #fff;
+   padding: 3px 7px;
+   border-radius: 8px;
+   text-align: center;
+   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+   z-index: 2;
+}
+.event-date-badge .month {
+   display: block;
+   font-size: 0.75rem;
+   font-weight: 700;
+   color: var(--primary-color);
+   text-transform: uppercase;
+}
+.event-date-badge .day {
+   display: block;
+   font-size: 1.2rem;
+   font-weight: 700;
+   color: #333;
+}
+
+/* Login Prompt Card */
+.login-prompt-card {
+   text-align: center;
+   padding: 40px 20px;
+   background: #f8f9fa;
+   border-radius: 12px;
+   border: 2px dashed #ccc;
+   margin: 20px 0;
+}
+.login-prompt-card .icon {
+   font-size: 48px;
+   color: #aaa;
+   margin-bottom: 10px;
+}
+.login-prompt-card h3 {
+   color: #555;
+   margin-bottom: 10px;
+}
+.login-btn {
+   display: inline-block;
+   margin-top: 15px;
+   padding: 10px 25px;
+   background: var(--primary-color);
+   color: #fff;
+   text-decoration: none;
+   border-radius: 25px;
+   font-weight: 600;
+}
+
+/* Mobile Tweaks */
+@media (max-width: 768px) {
+   .modern-grid {
+       grid-template-columns: 1fr; /* Stack cards on mobile */
+   }
+   .events-page-container {
+       padding: 0px; /* Less padding on mobile */
+   }
+   .hero-new .hero-content h1 {
+       font-size: 2rem; /* Smaller hero text on mobile */
+   }
+}
+
+/* =================================================== */
+/* BATCH 4: LIGHTBOX & GALLERY REDESIGN                */
+/* =================================================== */
+
+/* 1. Global Lightbox Styles */
+.lightbox-modal {
+   display: none;
+   position: fixed;
+   z-index: 11000; /* Very high */
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.95);
+   justify-content: center;
+   align-items: center;
+   opacity: 0;
+   transition: opacity 0.3s ease;
+}
+.lightbox-modal.active {
+   display: flex;
+   opacity: 1;
+}
+.lightbox-content-wrapper {
+   max-width: 90%;
+   max-height: 85%;
+}
+.lightbox-content-wrapper img {
+   max-width: 100%;
+   max-height: 85vh;
+   border-radius: 4px;
+   box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+.lightbox-modal .close-btn {
+   position: absolute;
+   top: 20px;
+   right: 25px;
+   color: white;
+   font-size: 40px;
+   cursor: pointer;
+   transition: color 0.2s;
+}
+.lightbox-modal .download-btn {
+   position: absolute;
+   bottom: 30px;
+   background: white;
+   color: black;
+   width: 50px;
+   height: 50px;
+   border-radius: 50%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   text-decoration: none;
+   box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+   transition: transform 0.2s ease;
+}
+.lightbox-modal .download-btn:active {
+   transform: scale(0.9);
+}
+
+/* 2. Redesigned Gallery Page */
+.gallery-container {
+   max-width: 1200px;
+   margin: 0 auto;
+   padding: 20px;
+}
+
+.gallery-hero {
+   text-align: center;
+   margin-bottom: 30px;
+   background: linear-gradient(135deg, #6a11cb, #2575fc);
+   color: white;
+   padding: 40px 20px;
+   border-radius: 16px;
+   box-shadow: 0 4px 15px rgba(37, 117, 252, 0.3);
+}
+.gallery-hero h1 {
+   font-size: 2rem;
+   margin-bottom: 10px;
+}
+
+.gallery-tabs {
+   display: flex;
+   justify-content: center;
+   flex-wrap: wrap;
+   gap: 10px;
+   margin-bottom: 30px;
+}
+.gallery-tab {
+   padding: 8px 16px;
+   border: 1px solid var(--border-color);
+   background: white;
+   border-radius: 20px;
+   font-size: 0.9rem;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   color: var(--text-secondary);
+}
+.gallery-tab.active, .gallery-tab:hover {
+   background: var(--primary-color);
+   color: white;
+   border-color: var(--primary-color);
+}
+
+/* Use the same "modern-grid" and "modern-card" from Events page, 
+  but add specific tweaks for gallery */
+.gallery-card {
+   break-inside: avoid; /* Masonry support if needed */
+}
+.gallery-caption {
+   padding: 15px;
+   font-weight: 500;
+   color: #333;
+   text-align: center;
+}
+.gallery-video-container {
+   position: relative;
+   padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+   height: 0;
+   overflow: hidden;
+   background: #000;
+}
+.gallery-video-container iframe {
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+}
+
+/* =================================================== */
+/* BATCH 5: GALLERY GRID & TWA HERO CARDS              */
+/* =================================================== */
+
+/* 2. Global TWA Hero Card (Purple Gradient) */
+/* This style matches your Gallery Hero */
+.twa-hero-card {
+   text-align: center;
+   margin: 20px 15px 30px 15px; /* Margins to make it look like a card */
+   background: linear-gradient(135deg, #6a11cb, #2575fc);
+   color: white;
+   padding: 30px 20px;
+   border-radius: 16px;
+   box-shadow: 0 8px 20px rgba(37, 117, 252, 0.25);
+}
+.twa-hero-card h1 {
+   font-size: 1.8rem;
+   margin-bottom: 8px;
+   text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.twa-hero-card p {
+   font-size: 0.95rem;
+   opacity: 0.9;
+   margin: 0;
+}
+
+/* 3. Home Page Hero Transformation (TWA Only) */
+/* When body has .twa-view, transform the main .hero-new into a card */
+body.twa-view .hero-new {
+   margin: 20px 15px; /* Add margin around it */
+   border-radius: 20px; /* Round the corners */
+   overflow: hidden; /* Clip the slideshow images */
+   box-shadow: 0 10px 25px rgba(0,0,0,0.15); /* Float it */
+   height: 55vh; /* Slightly taller for impact */
+   min-height: 350px;
+}
+
+/* Adjust the overlay for the card look */
+body.twa-view .hero-overlay {
+   border-radius: 20px;
+}
+
+/* =================================================== */
+/* BATCH 5 FIX: DEDICATED GALLERY GRID                 */
+/* =================================================== */
+
+/* 1. Reset the shared grid to be 1-column on mobile by default */
+/* This fixes the Events/Announcements showing 2 per row */
+@media (max-width: 768px) {
+   .modern-grid {
+       grid-template-columns: 1fr !important; /* Stack events vertically */
+       gap: 20px;
+   }
+}
+
+/* 2. New Dedicated Gallery Layout */
+.gallery-grid-layout {
+   display: grid;
+   gap: 15px;
+   /* Desktop: Auto-fit with a minimum width (approx 3+ per row) */
+   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+}
+
+/* Mobile Gallery specific override */
+@media (max-width: 768px) {
+   .gallery-grid-layout {
+       /* Force exactly 2 columns on mobile */
+       grid-template-columns: 1fr 1fr !important; 
+       gap: 10px;
+   }
+   
+   /* Force Square Aspect Ratio for Gallery Cards */
+   .gallery-grid-layout .modern-card {
+       aspect-ratio: 1 / 1; /* Make the whole card a square */
+       display: flex;
+       flex-direction: column;
+   }
+   
+   .gallery-grid-layout .card-image-container {
+       height: auto; /* Let flex grow handle it */
+       flex: 1; /* Take up remaining space */
+       width: 100%;
+   }
+   
+   .gallery-grid-layout .gallery-caption {
+       padding: 8px;
+       font-size: 0.8rem;
+       white-space: nowrap;
+       overflow: hidden;
+       text-overflow: ellipsis;
+       flex: 0 0 auto; /* Don't grow, just fit text */
+   }
+}
+.gallery-container {
+   max-width: 1200px; /* Ensure this is wide enough */
+   /* ... */
+}
+
+/* HIDE MOBILE SIDEBAR ON DESKTOP */
+@media (min-width: 769px) {
+   #mobileBrowserSidebar, 
+   .sidebar {
+       display: none !important; /* Strictly hide sidebar on laptop */
+   }
+}
+/* STRICT BOTTOM NAV CONTROL */
+
+/* 1. Hide by default on EVERYTHING (Desktop & Mobile Browser) */
+.bottom-nav {
+   display: none !important;
+}
+
+/* 2. Show ONLY if the body has the 'twa-view' class (App Mode) */
+body.twa-view .bottom-nav {
+   display: flex !important;
+}
+
+/* 3. Remove padding on browser (so footer isn't floating) */
+body:not(.twa-view) {
+   padding-bottom: 0 !important;
+}
+
+
+/* FORCE Mobile Header Visibility */
+@media (max-width: 768px) {
+   .new-site-header {
+       display: block !important; /* Ensure the new white header shows */
+   }
+   .app-header.home-app-header {
+       display: flex !important; /* Ensure the TWA header shows */
+   }
+}
+/* Ensure Bottom Nav is HIDDEN on Mobile Browser (No TWA class) */
+@media (max-width: 768px) {
+   body:not(.twa-view) .bottom-nav {
+       display: none !important;
+   }
+}
+
+/* Hide Quick Links on Browser (Desktop & Mobile) */
+body:not(.twa-view) .quick-links-grid {
+   display: none !important;
+}
+
+/* =================================================== */
+/* BATCH 6 FIXES: DASHBOARD & NAV                      */
+/* =================================================== */
+
+/* 1. RESTORE DESKTOP DASHBOARD SIDEBAR */
+@media (min-width: 769px) {
+   /* We previously hid .sidebar globally on desktop. 
+      We must UN-HIDE it specifically for the dashboard context. */
+   .dashboard .sidebar {
+       display: block !important;
+       position: fixed; /* Or fixed, depending on your preference */
+       bottom: 0;
+       height: 100vh;
+       width: 250px;
+       z-index: 10000;
+       background: #2c3e50; /* Restore background */
+   }
+
+   /* Hide the close button on desktop sidebar */
+   .dashboard .sidebar .close-sidebar-btn {
+       display: none;
+   }
+}
+
+/* 2. ACTIVE NAV LINK COLOR (Desktop Header) */
+.new-desktop-nav li a.active {
+   background-color: #768fec !important; /* Gold/Yellow */
+   color: #000 !important; /* Black text for contrast */
+   font-weight: 600;
+}
+
+/* 3. FLOATING DASHBOARD TOGGLE (Mobile Browser Only) */
+@media (max-width: 768px) {
+
+   /* Create the bottom-left floating button */
+   .dashboard-float-btn {
+       position: fixed;
+       top: 20px;
+       right: 20px;
+       width: 50px;
+       height: 50px;
+       background-color: var(--primary-color);
+       color: white;
+       border-radius: 50%;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+       z-index: 10000; /* High enough to sit on top */
+       cursor: pointer;
+       border: none;
+   }
+   
+}
+
+/* 4. FIX TWA HEADER STYLING */
+body.twa-view .app-header {
+   background-color: #fff;
+   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+   display: flex;
+   align-items: center;
+   padding: 15px;
+}
+body.twa-view .app-header .title {
+   font-size: 1.1rem;
+   font-weight: 600;
+   color: #333;
+   margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+   .about .aboutus p {
+         font-size: 0.85rem !important; /* Slightly smaller on mobile */
+   }
+   .about-section .about-container p {
+         font-size: 0.85rem !important; /* Slightly smaller on mobile */
+   }
+   .about-icons .icon-card p {
+      font-size: 0.50rem !important;
+   }
+}
+/* =================================================== */
+/* BATCH 9: BROWSER REFINEMENTS & SCROLLING            */
+/* =================================================== */
+
+/* DESKTOP: Normal Grid (One Row) */
+.centered-scroll-container {
+   display: grid;
+   grid-template-columns: repeat(3, 1fr); /* Force 3 columns in one row */
+   gap: 30px;
+   padding: 20px 0;
+   overflow: visible; /* Disable scrolling on desktop */
+   max-width: 1200px;
+   margin: 0 auto;
+}
+
+.centered-scroll-container .admin-card {
+   min-width: auto; /* Let grid control the width */
+   flex: none;
+   /* Optional: Ensure consistent height */
+   height: 100%; 
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+}
+
+
+/* MOBILE: App-Like Horizontal Scroll (Refined for "Peek" Effect) */
+@media (max-width: 768px) {
+   .centered-scroll-container {
+       display: flex;
+       grid-template-columns: none; /* Disable grid */
+       overflow-x: auto;
+       scroll-snap-type: x mandatory;
+       gap: 12px;
+       
+       /* Hide scrollbar */
+       -ms-overflow-style: none;
+       scrollbar-width: none;
+   }
+   .centered-scroll-container::-webkit-scrollbar {
+       display: none;
+   }
+
+   .centered-scroll-container .admin-card {
+       /* Force smaller width so neighbors are visible */
+       min-width: 260px !important; 
+       width: 260px !important;
+       scroll-snap-align: center; /* Always snap to center of screen */
+       flex: 0 0 auto;
+       
+       /* Visuals */
+       border-radius: 12px;
+       padding: 20px 15px;
+       margin: 0; /* Gap handles spacing */
+   }
+   /* 1. Remove padding from the main section wrapper */
+   #browser-admin-thoughts {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      overflow: visible !important; /* Allow child to scroll */
+  }
+  
+  /* 2. Remove padding constraints from the inner container */
+  #browser-admin-thoughts .container {
+      width: 100% !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      margin: 0 !important;
+      max-width: none !important;
+  }
+}
+
+/* 2. Refined Gallery Grid (Browser Home) */
+.gallery-grid {
+   display: grid;
+   gap: 15px;
+   /* Desktop: 4 columns */
+   grid-template-columns: repeat(4, 1fr);
+}
+.gallery-grid img {
+   width: 100%;
+   height: 250px; /* Fixed height */
+   object-fit: cover; /* Crop to fill */
+   border-radius: 3px;
+   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+   transition: transform 0.3s ease;
+}
+.gallery-grid img:hover {
+   transform: scale(1.03);
+}
+/* Mobile Gallery: 2 Columns */
+@media (max-width: 768px) {
+   .gallery-grid {
+       grid-template-columns: 1fr 1fr; /* 2 cols */
+   }
+   .gallery-grid img {
+       height: 150px; /* Smaller height */
+   }
+}
+
+
+/* 3. Smaller Icons on Mobile */
+@media (max-width: 768px) {
+   .about-icons {
+       gap: 10px !important;
+       flex-wrap: wrap;
+       justify-content: center;
+   }
+   .icon-card {
+       width: 45% !important; /* 2 per row */
+       max-width: 140px;
+   }
+   .icon-card img {
+       width: 60px !important; /* Smaller icon */
+       height: 60px !important;
+       margin-bottom: 5px;
+   }
+   .icon-card p {
+       font-size: 0.8rem !important;
+       line-height: 1.2;
+   }
+}
+
+/* =================================================== */
+/* BATCH 10: TOPPERS & DISCLOSURE STYLES               */
+/* =================================================== */
+
+/* 1. TWA Toppers Grid (RE-FIXED) */
+.toppers-section-app {
+   /* Increased top padding to 70px to give the heading space */
+   padding: 10px 15px 30px 15px !important; 
+   overflow: visible !important; 
+   margin-top: 10px; 
+}
+
+/* Fix Topper Overlap */
+.toppers-grid-app {
+   display: flex;
+   justify-content: center;
+   gap: 12px; 
+   align-items: flex-end; 
+   overflow: visible !important;
+   
+   /* FORCE SPACE between the heading and the cards */
+   margin-top: 50px !important; 
+   padding-bottom: 20px; /* Safety space at bottom */
+}
+
+.topper-card-app {
+   background: #fff;
+   border-radius: 12px;
+   padding: 15px 5px;
+   text-align: center;
+   position: relative;
+   flex: 1;
+   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   min-height: 140px; 
+   /* Ensure individual cards don't clip their own badges */
+   overflow: visible !important;
+}
+
+/* Rank Scaling */
+.topper-card-app:nth-child(2) { order: -1; transform: scale(0.92); } 
+.topper-card-app:nth-child(3) { order: 1; transform: scale(0.92); } 
+.topper-card-app:nth-child(1) { 
+   order: 0; 
+   transform: scale(1.1); /* Slightly larger pop */
+   z-index: 10; /* Ensure it sits on top of neighbors */
+   margin-top: -15px; /* Lift it higher */
+   margin-bottom: 10px;
+   box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* Stronger shadow for depth */
+}
+
+.topper-card-app img {
+   width: 55px; height: 55px;
+   border-radius: 50%;
+   object-fit: cover;
+   margin-bottom: 8px;
+   border: 2px solid #f0f0f0;
+}
+
+.topper-card-app h4 {
+   font-size: 0.75rem; /* Slightly smaller font */
+   margin: 0 0 4px 0;
+   color: #333;
+   
+   /* FIX: Allow text to wrap instead of cut off */
+   white-space: normal; 
+   line-height: 1.2;
+   width: 100%;
+   padding: 0 2px;
+   
+   /* Limit to 2 lines max */
+   display: -webkit-box;
+   -webkit-line-clamp: 2;
+   -webkit-box-orient: vertical;
+   overflow: hidden;
+}
+
+.topper-card-app .percent {
+   font-size: 0.75rem;
+   font-weight: bold;
+   color: var(--primary-color);
+   margin-top: auto; /* Pushes to bottom */
+}
+
+.rank-badge {
+   position: absolute;
+   top: -12px; /* Moved slightly higher */
+   left: 50%;
+   transform: translateX(-50%);
+   width: 26px;
+   height: 26px;
+   border-radius: 50%;
+   color: white;
+   font-weight: bold;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 0.85rem;
+   border: 2px solid #fff;
+   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+   z-index: 5;
+}
+
+/* 2. Mandatory Disclosure List */
+.disclosure-list {
+   display: flex;
+   flex-direction: column;
+   gap: 15px;
+}
+.disclosure-item {
+   display: flex;
+   align-items: center;
+   background: #fff;
+   padding: 15px;
+   border-radius: 8px;
+   border: 1px solid #eee;
+   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+   transition: transform 0.2s;
+}
+.disclosure-item:hover {
+   transform: translateX(5px);
+   border-left: 4px solid var(--primary-color);
+}
+.doc-icon {
+   background: #e3f2fd;
+   color: var(--primary-color);
+   width: 40px; height: 40px;
+   border-radius: 50%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   margin-right: 15px;
+}
+.doc-info { flex: 1; }
+.doc-info h3 { margin: 0; font-size: 1rem; color: #333; }
+.doc-download-btn {
+   text-decoration: none;
+   color: var(--primary-color);
+   font-weight: 600;
+   display: flex;
+   align-items: center;
+   gap: 5px;
+}
+
+/* =================================================== */
+/* FINAL TWEAK: COMPACT SIDEBAR                        */
+/* =================================================== */
+
+@media (max-width: 768px) {
+   /* Reduce space between list items */
+   .sidebar ul li {
+       margin-bottom: 2px !important; /* Was 8px */
+       border-bottom: 1px solid rgba(255,255,255,0.05); /* Optional: faint divider */
+   }
+
+   /* Make links/buttons smaller and tighter */
+   .sidebar ul li a, 
+   .sidebar ul li button {
+       padding: 10px 15px !important; /* Was 14px 20px */
+       font-size: 0.95rem !important; /* Was 1.05rem */
+       min-height: auto; /* Allow height to shrink */
+   }
+   
+   /* Adjust the close button position if needed */
+   .sidebar::before {
+       top: 15px;
+       right: 15px;
+   }
+   .sidebar {
+       padding-top: 60px; /* Pull content up slightly */
+   }
+}
+
+/* =========================================
+   1. HERO SECTION REVAMP (Cinema Style)
+   ========================================= */
+   .hero-new {
+      position: relative;
+      height: 65vh; /* Taller hero for impact */
+      display: flex;
+      align-items: flex-end; /* Text at bottom looks more modern */
+      justify-content: center;
+      overflow: hidden;
+  }
+  
+  /* Gradient Overlay - Makes text readable without blocking image */
+  .hero-overlay {
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%);
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+  }
+  
+  .hero-content {
+      position: relative;
+      z-index: 3;
+      text-align: center;
+      padding-bottom: 40px; /* Space from bottom */
+      width: 90%;
+      max-width: 800px;
+  }
+  
+  .hero-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 15px;
+      text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+      letter-spacing: -2px;
+  }
+  
+  .hero-subtitle {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      margin-bottom: 30px;
+      font-weight: 300;
+  }
+  
+  .hero-cta {
+      background: white;
+      color: black;
+      padding: 12px 30px;
+      border-radius: 50px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  }
+  
+  .hero-cta:active { transform: scale(0.95); }
+  
+  
+  /* =========================================
+     2. GALLERY BENTO GRID (Modern & uneven)
+     ========================================= */
+     
+  .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
+      gap: 10px;
+      padding: 0 15px;
+  }
+  
+  /* Make images fill their cells perfectly */
+  .gallery-grid img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+      aspect-ratio: 1 / 1; /* Square by default */
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  
+  /* Bento Magic: Make every 3rd image wide */
+  .gallery-grid img:nth-child(3n) {
+      grid-column: span 2;
+      aspect-ratio: 16 / 9; /* Wide cinematic shot */
+  }
+  
+  /* Desktop Polish */
+  @media (min-width: 768px) {
+      .gallery-grid {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 15px;
+          padding: 0 50px;
+      }
+      .gallery-grid img:nth-child(3n) {
+          grid-column: auto;
+          aspect-ratio: 1 / 1;
+      }
+      .gallery-grid img {
+         height: 85%;
+         width: 85%;
+      }
+  }
+  
+  
+  /* =========================================
+     3. ABOUT SECTION (Clean Card Style)
+     ========================================= */
+  .about {
+      padding: 60px 20px;
+      margin-top: -30px; /* Slight overlap with hero looks pro */
+      position: relative;
+      z-index: 4;
+      border-radius: 30px 30px 0 0; /* Curved top */
+  }
+  
+  .aboutus {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.099);
+      text-align: center;
+  }
+  
+  .aboutus h2 {
+      font-size: 1.3rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--primary-color); /* Use your brand color variable */
+      margin-bottom: 10px;
+      opacity: 0.8;
+  }
+  
+  .aboutus h3 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: #333;
+      font-family: 'Poppins', sans-serif; /* Ensure attractive font */
+  }
+  
+  .aboutus p {
+      color: #666;
+      line-height: 1.6;
+      font-size: 0.95rem;
+      margin-bottom: 15px;
+  }
+
+/* =========================================
+   4. SKELETON LOADING ANIMATION
+   ========================================= */
+
+/* The Shimmer Effect */
+@keyframes shimmer {
+   0% { background-position: -1000px 0; }
+   100% { background-position: 1000px 0; }
+}
+
+/* Apply this to image containers or images themselves while loading */
+.skeleton-loading {
+   background: #f6f7f8;
+   background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+   background-repeat: no-repeat;
+   background-size: 1000px 100%; 
+   animation: shimmer 2s infinite linear;
+   min-height: 200px; /* Prevent layout shift */
+}
+
+/* The Image itself starts invisible */
+img[loading="lazy"] {
+   opacity: 0;
+   transition: opacity 0.6s ease-in-out;
+}
+
+/* Once loaded, we add this class via JS */
+img.loaded {
+   opacity: 1;
+}
+
+/* Specific Adjustments for your sections */
+.gallery-grid img { background-color: #f0f0f0; } /* Fallback */
+.admin-photo { background-color: #f0f0f0; }
+.card-image-container { background-color: #f0f0f0; }

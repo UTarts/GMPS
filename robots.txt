@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /includes/
+Disallow: /api/
+Disallow: /archives/
+Disallow: /admin.php
+Disallow: /student.php
+Disallow: /teacher.php
+
+Sitemap: https://govindmadhav.com/sitemap.xml

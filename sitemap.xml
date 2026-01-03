@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+   <url>
+      <loc>https://govindmadhav.com/</loc>
+      <lastmod>2025-01-01</lastmod>
+      <priority>1.00</priority>
+   </url>
+   <url>
+      <loc>https://govindmadhav.com/admissions.php</loc>
+      <priority>0.80</priority>
+   </url>
+   <url>
+      <loc>https://govindmadhav.com/academics.php</loc>
+      <priority>0.80</priority>
+   </url>
+   <url>
+      <loc>https://govindmadhav.com/gallery.php</loc>
+      <priority>0.80</priority>
+   </url>
+   <url>
+      <loc>https://govindmadhav.com/contact.php</loc>
+      <priority>0.80</priority>
+   </url>
+   <url>
+      <loc>https://govindmadhav.com/events.php</loc>
+      <priority>0.80</priority>
+   </url>
+   <url>
+      <loc>https://govindmadhav.com/mandatory_disclosure.php</loc>
+      <priority>0.60</priority>
+   </url>
+</urlset>
