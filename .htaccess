@@ -1,9 +1,14 @@
-# 1. ENABLE COMPRESSION (Makes site 70% faster)
+
+<IfModule mod_security.c>
+  SecRuleEngine Off
+  SecFilterEngine Off
+  SecFilterScanPOST Off
+</IfModule>
+
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json
 </IfModule>
 
-# 2. BROWSER CACHING (Images stay on the phone)
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType image/jpg "access 1 year"
@@ -14,5 +19,4 @@
   ExpiresByType text/x-javascript "access 1 month"
 </IfModule>
 
-# 3. SECURITY (Prevents people from seeing your file list)
 Options -Indexes
