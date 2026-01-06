@@ -48,7 +48,7 @@
     <!-- Main Content -->
     <main class="admissions">
         <!-- Hero Section -->
-        <section class="admissions-hero">
+        <section class="twa-hero-card">
             <h1>Admissions</h1>
             <p>Join us for a bright future.</p>
         </section>

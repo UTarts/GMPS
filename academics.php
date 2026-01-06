@@ -16,7 +16,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 <main class="academic">
 
     <!-- Hero Section -->
-    <section class="hero">
+    <section class="twa-hero-card">
         <h1>Our Academic Programs</h1>
         <p>Govind Madhav Public School offers world-class education, fostering excellence and all-round development in every student.</p>
     </section>

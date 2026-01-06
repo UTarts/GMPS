@@ -63,7 +63,7 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
             <div class="about-header" data-aos="fade-down">
                 <h4 class="sanskrit-tagline">वाचः सत्यमशीमहि</h4>
                 <h2 class="prestige-heading">About <span class="highlight-gold">Us</span></h2>
-                <div class="divider-leaf">✻</div>
+                <div class="heading-line"></div>
             </div>
 
             <div class="history-pill-container" data-aos="zoom-in">
@@ -222,7 +222,7 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
             
             <div class="section-header-left">
                 <h4 class="mini-heading">Campus Life</h4>
-                <h2 class="main-heading">Life at <span class="highlight">GMPS</span></h2>
+                <h3 class="main-heading">Life at <span class="highlight">GMPS</span></h3>
                 <div class="heading-line"></div>
             </div>
 
@@ -258,7 +258,11 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
 
     <section id="browser-admin-thoughts" class="admin-section">
         <div class="container">
-            <h2 class="section-title">Insights from the <span style="color: var(--accent-color);">Administration</span></h2>
+        <div class="section-header-left">
+                <h4 class="mini-heading">Insights from the</h4>
+                <h3 class="main-heading">Administration</h3>
+                <div class="heading-line"></div>
+            </div>
             <div class="centered-scroll-container" id="adminScrollContainer">
                 <?php while($th = $admin_thoughts_res->fetch_assoc()): ?>
                 <div class="admin-card">
@@ -450,8 +454,6 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
         </div>
     </section>
 
-    <?php include 'footer.php'; ?>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
     <script>
         // 1. Initialize Animation Library
@@ -547,5 +549,13 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
         });
     </script>
     <a href="admissions.php#admissions-form" id="ctaButton">Apply Now</a>
+    <style>
+    footer {
+        margin-bottom: -50px !important;
+        position: relative;
+        z-index: 100;
+        }
+    </style>
+    <?php include 'footer.php'; ?>
 </body>
 </html>

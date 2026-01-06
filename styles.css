@@ -1858,446 +1858,6 @@ background-color: #e0a800;
 }
 
 
-
-/* New Bottom Navigation Bar */
-.bottom-nav {
-   position: fixed;
-   bottom: 0;
-   left: 0;
-   width: 100%;
-   height: 70px; /* Taller for a modern feel */
-   background-color: var(--surface-color);
-   display: flex;
-   justify-content: space-around;
-   align-items: start; /* Aligns icons to the top of the bar */
-   padding-top: 7px;
-   box-shadow: 0 -2px 5px rgba(0,0,0,0.08); /* Stronger shadow */
-   z-index: 1001;
-   border-top: 1px solid var(--border-color);
-}
-.bottom-nav .nav-item {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   text-decoration: none;
-   color: var(--text-secondary);
-   gap: 4px; /* Space between icon and label */
-
-   /* New properties for sizing and transitions */
-   height: 48px;
-   padding: 4px 12px;
-   border-radius: 20px; /* This allows the pill shape */
-   margin-top: -4px; /* Adjusts vertical alignment */
-   transition: all 0.2s ease-in-out; /* Transition all properties */
-}
-.bottom-nav .nav-item .icon {
-   font-size: 24px;
-}
-.bottom-nav .nav-item .label {
-   font-size: 0.75rem; /* Small, app-like text */
-   font-weight: 500;
-}
-
-/* Active state for bottom nav */
-.bottom-nav .nav-item.active {
-   color: var(--white-color); /* White text */
-   background-color: rgb(164, 72, 255); /* Blue "pill" background */
-   font-weight: 600;
-}
-
-/* Add padding to the body to prevent content from being
-  hidden behind the new bottom nav */
-body {
-   padding-bottom: 80px; /* A bit more than the nav height */
-}
-
-
-/* Show the OLD header on desktop,
-  and hide the NEW app headers */
-@media (min-width: 769px) {
-   .app-header,
-   .home-app-header,
-   .secondary-nav,
-   .bottom-nav {
-       display: none; /* Hide all new app UI on desktop */
-   }
-   
-   /* Re-set body padding for desktop */
-   body {
-       padding-bottom: 0;
-   }
-}
-
-
-/* =================================================== */
-/* NEW APP-LIKE HOME PAGE STYLES (ADD AT END)          */
-/* =================================================== */
-
-/* 1. Body & General Tweaks */
-.app-body {
-   background-color: var(--background-color); /* Kills the "white white white" */
-}
-
-/* Make the hero section shorter on mobile */
-@media (max-width: 768px) {
-   .hero-new {
-       height: 60vh; /* Shorter than 100vh */
-       min-height: 400px;
-   }
-   .hero-cta {
-       font-size: 0.8rem; /* Slightly smaller text */
-      }
-}
-
-/* 2. Quick Links Grid */
-.quick-links-grid {
-   display: grid;
-   grid-template-columns: 1fr 1fr; /* 2x2 grid */
-   gap: 15px;
-   padding: 20px 15px;
-}
-.quick-link-card {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   padding: 25px 15px;
-   border-radius: 12px;
-   text-decoration: none;
-   background-color: var(--card-color, var(--primary-color));
-   color: var(--white-color);
-   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-   transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.quick-link-card:hover {
-   transform: translateY(-5px);
-   box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-}
-.quick-link-card .icon {
-   font-size: 36px;
-}
-.quick-link-card .label {
-   font-size: 0.9rem;
-   font-weight: 600;
-   margin-top: 8px;
-   text-align: center;
-}
-
-/* 3. Horizontal Scroll Section */
-.horizontal-scroll-section {
-   padding: 0 0 20px 0; /* No top padding */
-   margin: 0;
-}
-.section-header {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   padding: 15px 15px 10px 15px;
-}
-.section-header h2 {
-   font-size: 1.3rem;
-   font-weight: 600;
-   color: var(--text-primary);
-   margin: 0;
-}
-.view-all-link {
-   text-decoration: none;
-   color: var(--primary-color);
-   font-size: 0.9rem;
-   font-weight: 500;
-}
-
-.scroll-container {
-   display: flex;
-   overflow-x: auto;
-   padding: 0 15px 15px 15px;
-   gap: 15px;
-   /* Hide scrollbar */
-   -ms-overflow-style: none;  /* IE and Edge */
-   scrollbar-width: none;  /* Firefox */
-}
-.scroll-container::-webkit-scrollbar {
-   display: none; /* Chrome, Safari, Opera */
-}
-
-/* 4. Event Preview Card */
-.event-preview-card {
-   flex: 0 0 280px; /* Fixed width, don't shrink */
-   display: flex;
-   align-items: center;
-   background: var(--surface-color);
-   border-radius: 12px;
-   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-   padding: 15px;
-   gap: 15px;
-   text-decoration: none;
-   border: 1px solid var(--border-color);
-}
-.event-preview-card .event-date {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   background-color: var(--background-color);
-   border-radius: 8px;
-   padding: 8px 12px;
-}
-.event-preview-card .event-date .month {
-   font-size: 0.8rem;
-   font-weight: 600;
-   color: var(--primary-color);
-   text-transform: uppercase;
-}
-.event-preview-card .event-date .day {
-   font-size: 1.4rem;
-   font-weight: 600;
-   color: var(--text-primary);
-}
-.event-preview-card .event-info h3 {
-   font-size: 1rem;
-   font-weight: 600;
-   color: var(--text-primary);
-   margin: 0 0 4px 0;
-}
-.event-preview-card .event-info p {
-   font-size: 0.85rem;
-   color: var(--text-secondary);
-   margin: 0;
-   line-height: 1.4;
-}
-
-/* 5. Gallery Preview Card */
-.gallery-scroll {
-   gap: 10px;
-}
-.gallery-preview-card {
-   flex: 0 0 140px; /* Fixed width */
-   height: 180px;
-   border-radius: 12px;
-   overflow: hidden;
-   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-   border: 1px solid var(--border-color);
-}
-.gallery-preview-card img {
-   width: 100%;
-   height: 100%;
-   object-fit: cover;
-   transition: transform 0.2s ease;
-}
-.gallery-preview-card:hover img {
-   transform: scale(1.05);
-}
-
-/* 6. Restyled Content Card (for About/Mission) */
-.content-card-section {
-   padding: 20px 15px;
-   margin: 0 15px 20px 15px;
-   background: var(--surface-color);
-   border-radius: 12px;
-   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-   border: 1px solid var(--border-color);
-}
-.content-card-section h2 {
-   font-size: 1.3rem;
-   font-weight: 600;
-   color: var(--text-primary);
-   margin-bottom: 8px;
-   text-align: left;
-}
-.content-card-section h3 {
-   font-size: 1.1rem;
-   font-weight: 500;
-   color: var(--text-secondary);
-   margin-bottom: 15px;
-   text-align: left;
-}
-.content-card-section p {
-   font-size: 0.95rem;
-   color: var(--text-secondary);
-   line-height: 1.6;
-   margin-bottom: 10px;
-}
-/* Keep original about-icons styles */
-.content-card-section .about-icons {
-   margin-top: 15px;
-}
-
-
-/* 8. On Desktop, hide new app layout */
-@media (min-width: 769px) {
-   .app-body {
-       background: linear-gradient(135deg, #fffbf0 0%, #e0f7fa 100%); /* Restore original body bg */
-   }
-
-   .quick-links-grid,
-   .horizontal-scroll-section,
-   .content-card-section {
-       display: none;
-   }
-}
-
-/* =================================================== */
-/* NEW TWA-ONLY CARD STYLES (ADD AT END)               */
-/* =================================================== */
-
-/* 1. New Announcement Card (for horizontal scroll) */
-.announcement-card {
-   flex: 0 0 280px; /* Fixed width */
-   display: flex;
-   flex-direction: column;
-   gap: 8px;
-   background: var(--surface-color);
-   border-radius: 12px;
-   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-   padding: 15px;
-   text-decoration: none;
-   border: 1px solid var(--border-color);
-}
-.announcement-card h3 {
-   font-size: 1rem;
-   font-weight: 600;
-   color: var(--text-primary);
-   margin: 0;
-}
-.announcement-card p {
-   font-size: 0.85rem;
-   color: var(--text-secondary);
-   margin: 0;
-   line-height: 1.4;
-}
-.placeholder-card {
-   padding: 20px;
-   color: var(--text-secondary);
-}
-
-/* 2. TWA Faculty Card */
-.app-card-image {
-   width: 100%;
-   height: auto;
-   border-radius: 12px;
-   object-fit: cover;
-}
-
-/* 3. TWA Admin Thoughts Card */
-.admin-thought-card {
-   flex: 0 0 245px; /* Fixed width */
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   text-align: center;
-   background: var(--surface-color);
-   border-radius: 12px;
-   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-   padding: 20px 15px;
-   border: 1px solid var(--border-color);
-}
-.admin-photo-app {
-   width: 80px;
-   height: 80px;
-   border-radius: 50%;
-   object-fit: cover;
-   margin-bottom: 10px;
-   border: 3px solid var(--background-color);
-}
-.admin-thought-card h4 {
-   font-size: 1rem;
-   font-weight: 600;
-   color: var(--text-primary);
-   margin: 0;
-}
-.admin-thought-card span {
-   font-size: 0.8rem;
-   font-weight: 500;
-   color: var(--primary-color);
-   margin-bottom: 10px;
-}
-.admin-thought-card p {
-   font-size: 0.85rem;
-   color: var(--text-secondary);
-   font-style: italic;
-   margin: 0;
-   line-height: 1.5;
-}
-
-/* 5. TWA Contact Card */
-.contact-card-app {
-   display: flex;
-   justify-content: space-around;
-   gap: 10px;
-   margin-bottom: 15px;
-}
-.contact-item-app {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   gap: 8px;
-   text-decoration: none;
-   padding: 10px;
-   border-radius: 12px;
-   transition: background-color 0.2s ease;
-}
-.contact-item-app:hover {
-   background-color: var(--background-color);
-}
-.contact-item-app .icon {
-   font-size: 28px;
-   color: var(--white-color);
-   padding: 12px;
-   border-radius: 50%;
-}
-.contact-item-app:nth-child(1) .icon { background-color: #34A853; } /* Call */
-.contact-item-app:nth-child(2) .icon { background-color: #25D366; } /* WhatsApp */
-.contact-item-app:nth-child(3) .icon { background-color: #EA4335; } /* Email */
-
-.contact-item-app .label {
-   font-size: 0.85rem;
-   font-weight: 500;
-   color: var(--text-primary);
-}
-.address-app {
-   font-size: 0.9rem;
-   color: var(--text-secondary);
-   line-height: 1.5;
-   text-align: center;
-   margin: 0;
-}
-
-/* 6. TWA Share Card */
-.share-card-app {
-   display: flex;
-   flex-direction: column;
-   gap: 10px;
-}
-.share-button, .website-link-app {
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   gap: 10px;
-   padding: 15px;
-   border-radius: 12px;
-   text-decoration: none;
-   font-size: 1rem;
-   font-weight: 600;
-   border: none;
-   cursor: pointer;
-   transition: background-color 0.2s ease;
-}
-.share-button {
-   background-color: var(--primary-color);
-   color: var(--white-color);
-}
-.share-button:hover {
-   background-color: #3a448a; /* Darker primary */
-}
-.website-link-app {
-   background-color: var(--background-color);
-   color: var(--text-primary);
-}
-.website-link-app:hover {
-   background-color: #e9e9ed; /* Darker background */
-}
-
-
 /* =================================================== */
 /* DESKTOP HEADER FIX (ADD AT END)                     */
 /* =================================================== */
@@ -3653,9 +3213,10 @@ img.loaded {
    .premium-blog-section {
       padding: 45px 20px;
       background: #ffffff;
-      margin-top: -25px;
+      margin-top: -25px; 
       border-radius: 12px;
       z-index: 11;
+      position: relative;
   }
   
   .section-header-center {
@@ -3754,7 +3315,7 @@ img.loaded {
       color: #666;
       line-height: 1.6;
       margin-bottom: 20px;
-      flex: 1; /* Pushes button down */
+      flex: 1;
   }
   
   .read-more {
@@ -3838,271 +3399,280 @@ img.loaded {
       color: #555; 
   }
   
-  /* MOBILE RESPONSIVENESS */
-  /* MOBILE RESPONSIVENESS (ROBUST FLEXBOX FIX) */
-@media (max-width: 768px) {
-   .blog-grid { 
-       grid-template-columns: 1fr; 
-       gap: 15px; 
-   }
-   
-   .blog-card { 
-       flex-direction: row;      /* Image Left, Text Right */
-       align-items: stretch;     /* Make image fill full height */
-       height: auto; 
-       min-height: 120px;        /* Minimum touch area */
-       position: relative;       /* Reset positioning context */
-   }
-   
-   .blog-image { 
-       /* The Fix: No absolute positioning. Just a fixed width block. */
-       width: 120px;             
-       min-width: 120px;         /* Force width so it never squishes */
-       height: auto;             /* Let it stretch vertically */
-       position: relative;       /* Reset absolute */
-       left: auto; top: auto; bottom: auto;
-   }
-   
-   .blog-image img {
-       position: absolute;       /* Internal image fills the container */
-       top: 0; left: 0;
-       width: 100%; height: 100%;
-       object-fit: cover;
-   }
-
-   .blog-content { 
-       padding: 15px;            /* Standard padding */
-       flex: 1;                  /* Take remaining width */
-   }
-   
-   /* Hiding elements for clean mobile look */
-   .blog-category { display: none; } 
-   .blog-content p { display: none; } 
-   
-   /* Typography Adjustments */
-   .blog-content h3 { 
-       font-size: 1rem; 
-       margin-bottom: 8px; 
-       line-height: 1.4;
-   }
-   
-   .read-more { 
-       font-size: 0.8rem; 
-       margin-top: auto; /* Push to bottom if needed */
-   }
-   
-   .blog-modal-content { 
-       padding: 25px 20px; 
-       width: 95%;
-   }
-}
-.modal-hero-img {
-   width: 100%;
-   height: 300px;        
-   object-fit: cover;   
-   border-radius: 8px;
-   margin-bottom: 25px;  
-   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-@media (max-width: 768px) {
-   .modal-hero-img {
-       height: 180px;
-   }
-}
+  /* BLOG MOBILE RESPONSIVENESS */
+  @media (max-width: 768px) {
+      /* FIX: Remove Side Gaps and Floating Effect */
+      .premium-blog-section {
+          padding: 45px 0 !important; 
+          width: 100% !important;
+      }
+      
+      /* Restore padding for content so text doesn't hit edge */
+      .premium-blog-section .container {
+          padding-left: 15px;
+          padding-right: 15px;
+      }
+  
+      .blog-grid { 
+          grid-template-columns: 1fr; 
+          gap: 15px; 
+      }
+      
+      .blog-card { 
+          flex-direction: row;
+          align-items: stretch;
+          height: auto; 
+          min-height: 120px;
+          position: relative;
+      }
+      
+      .blog-image { 
+          width: 120px;             
+          min-width: 120px;
+          height: auto;
+          position: relative;
+          left: auto; top: auto; bottom: auto;
+      }
+      
+      .blog-image img {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          object-fit: cover;
+      }
+  
+      .blog-content { 
+          padding: 15px;
+          flex: 1;
+      }
+      
+      .blog-category { display: none; } 
+      .blog-content p { display: none; } 
+      
+      .blog-content h3 { 
+          font-size: 1rem; 
+          margin-bottom: 8px; 
+          line-height: 1.4;
+      }
+      
+      .read-more { 
+          font-size: 0.8rem; 
+          margin-top: auto; 
+      }
+      
+      .blog-modal-content { 
+          padding: 25px 20px; 
+          width: 95%;
+      }
+  }
+  
+  .modal-hero-img {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;   
+      border-radius: 8px;
+      margin-bottom: 25px;  
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  
+  @media (max-width: 768px) {
+      .modal-hero-img {
+          height: 180px;
+      }
+  }
+  
   /* =========================================
-   PART 4: INFINITE TRUST TESTIMONIALS
-   ========================================= */
-.testimonials-modern {
-   padding: 45px 20px;
-   background: white;
-   overflow: hidden; /* Hide scrollbar bleed */
-}
-
-.section-header-left {
-   max-width: 1200px;
-   margin: 0 auto 20px auto;
-   text-align: left;
-}
-
-/* THE HORIZONTAL SLIDER */
-.testimonial-slider {
-   display: flex;
-   gap: 20px;
-   overflow-x: auto;
-   scroll-snap-type: x mandatory;
-   padding-bottom: 30px; /* Space for scrollbar/shadow */
-   -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
-   
-   /* Hide scrollbar visually but keep functionality */
-   scrollbar-width: none; /* Firefox */
-   -ms-overflow-style: none; /* IE */
-   
-   /* Center layout logic */
-   max-width: 1400px;
-   margin: 0 auto;
-   padding-left: max(20px, (100% - 1200px) / 2); /* Smart padding */
-   padding-right: 20px;
-}
-
-.testimonial-slider::-webkit-scrollbar {
-   display: none; /* Chrome/Safari */
-}
-
-/* THE CARD */
-.review-card {
-   flex: 0 0 350px; /* Fixed width */
-   scroll-snap-align: start;
-   background: #fff;
-   border: 1px solid #eee;
-   border-radius: 16px;
-   padding: 25px;
-   box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-   transition: transform 0.3s ease, box-shadow 0.3s ease;
-   display: flex;
-   flex-direction: column;
-}
-
-.review-card:hover {
-   transform: translateY(-5px);
-   box-shadow: 0 15px 30px rgba(0,0,0,0.08);
-   border-color: var(--primary-color);
-}
-
-/* Review Header (Photo + Stars) */
-.review-header {
-   display: flex;
-   align-items: center;
-   gap: 15px;
-   margin-bottom: 15px;
-}
-
-.reviewer-img {
-   width: 50px; height: 50px;
-   border-radius: 50%;
-   object-fit: cover;
-   border: 2px solid #f0f0f0;
-}
-
-.reviewer-initial {
-   width: 50px; height: 50px;
-   border-radius: 50%;
-   background: var(--accent-color);
-   color: white;
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   font-weight: bold;
-   font-size: 1.2rem;
-}
-
-.reviewer-info h4 {
-   font-size: 1rem;
-   font-weight: 700;
-   margin: 0 0 4px 0;
-   color: #333;
-}
-
-.stars {
-   color: #ffc107; /* Gold */
-   font-size: 0.9rem;
-   letter-spacing: 1px;
-}
-
-/* Review Text */
-.review-text {
-   font-size: 0.95rem;
-   line-height: 1.6;
-   color: #555;
-   font-style: italic;
-   margin-bottom: 20px;
-   flex: 1; /* Pushes footer down */
-}
-
-/* Review Footer */
-.review-footer {
-   font-size: 0.8rem;
-   color: #999;
-   font-weight: 600;
-   text-transform: uppercase;
-   border-top: 1px solid #f5f5f5;
-   padding-top: 15px;
-}
-
-.swipe-hint {
-   text-align: center;
-   color: #aaa;
-   font-size: 0.85rem;
-   margin-top: 6px;
-   display: none; /* Hidden on desktop */
-}
-
-/* MOBILE OPTIMIZATION */
-@media (max-width: 768px) {
-   .testimonial-slider {
-       padding-left: 20px; /* Reset smart padding */
-       gap: 15px;
-   }
-   
-   .review-card {
-       flex: 0 0 300px; /* Slightly narrower on mobile */
-   }
-   
-   .swipe-hint {
-       display: block; /* Show hint on mobile */
-   }
-   
-   .section-header-left {
-       text-align: center;
-   }
-}
-
-/* =========================================
-   MOBILE STATS GRID (2 per row + 1 Full)
-   ========================================= */
-@media (max-width: 768px) {
-    .stats .container {
-        display: grid !important; 
-        grid-template-columns: 1fr 1fr; 
-        gap: 15px; 
-        padding: 0 15px; 
-        justify-items: stretch;
-    }
-
-    .stats .stat-box {
-        width: 100% !important; 
-        margin: 0 !important;   
-        flex: none !important;
-    }
-
-    .stats .stat-box:nth-child(5) {
-        grid-column: span 2;
-    }
-}
-.stat-number {
-   color: white;
-}
-
-   .gallery-bento-section {
+     PART 4: INFINITE TRUST TESTIMONIALS
+     ========================================= */
+  .testimonials-modern {
+      padding: 45px 20px;
+      background: white;
+      overflow: hidden;
+  }
+  
+  .section-header-left {
+      max-width: 1200px;
+      margin: 0 auto 20px auto;
+      text-align: left;
+  }
+  
+  .testimonial-slider {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 30px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding-left: max(20px, (100% - 1200px) / 2);
+      padding-right: 20px;
+  }
+  
+  .testimonial-slider::-webkit-scrollbar {
+      display: none;
+  }
+  
+  .review-card {
+      flex: 0 0 350px;
+      scroll-snap-align: start;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
+  }
+  
+  .review-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+      border-color: var(--primary-color);
+  }
+  
+  .review-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+  }
+  
+  .reviewer-img {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #f0f0f0;
+  }
+  
+  .reviewer-initial {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+  }
+  
+  .reviewer-info h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 4px 0;
+      color: #333;
+  }
+  
+  .stars {
+      color: #ffc107;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+  }
+  
+  .review-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #555;
+      font-style: italic;
+      margin-bottom: 20px;
+      flex: 1;
+  }
+  
+  .review-footer {
+      font-size: 0.8rem;
+      color: #999;
+      font-weight: 600;
+      text-transform: uppercase;
+      border-top: 1px solid #f5f5f5;
+      padding-top: 15px;
+  }
+  
+  .swipe-hint {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.85rem;
+      margin-top: 6px;
+      display: none;
+  }
+  
+  /* MOBILE TESTIMONIALS */
+  @media (max-width: 768px) {
+      /* FIX: Full width section */
+      .testimonials-modern {
+          padding: 45px 0; 
+      }
+      
+      .testimonial-slider {
+          padding-left: 20px;
+          gap: 15px;
+      }
+      
+      .review-card {
+          flex: 0 0 300px;
+      }
+      
+      .swipe-hint {
+          display: block;
+      }
+      
+      .section-header-left {
+          text-align: center;
+          padding: 0 15px; /* Keep title aligned */
+      }
+  }
+  
+  /* =========================================
+     MOBILE STATS GRID (2 per row + 1 Full)
+     ========================================= */
+  @media (max-width: 768px) {
+      .stats .container {
+          display: grid !important; 
+          grid-template-columns: 1fr 1fr; 
+          gap: 15px; 
+          padding: 0 15px; 
+          justify-items: stretch;
+      }
+  
+      .stats .stat-box {
+          width: 100% !important; 
+          margin: 0 !important;   
+          flex: none !important;
+      }
+  
+      .stats .stat-box:nth-child(5) {
+          grid-column: span 2;
+      }
+  }
+  .stat-number {
+      color: white;
+  }
+  
+  /* =========================================
+     GALLERY BENTO
+     ========================================= */
+  .gallery-bento-section {
       padding: 35px 20px;
       border-radius: 12px;
   }
   
   .bento-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr); /* Desktop: 4 columns */
-      grid-template-rows: 250px 250px;       /* Desktop: 2 rows of height */
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: 250px 250px;
       gap: 15px;
       margin-bottom: 20px;
   }
   
-  /* Base Styles for Items */
   .bento-item {
       position: relative;
       border-radius: 16px;
       overflow: hidden;
       cursor: pointer;
-      display: block; /* Makes anchor tag fill the grid cell */
+      display: block;
       width: 100%;
       height: 100%;
   }
@@ -4112,27 +3682,18 @@ img.loaded {
       height: 100%;
       object-fit: cover;
       display: block;
-      /* No hover effect requested */
-  }
-  .item-1 {
-      grid-column: span 2;
-      grid-row: span 2;
   }
   
-  .item-2, .item-3, .item-4 {
-      grid-column: span 1;
-      grid-row: span 1;
-  }
+  .item-1 { grid-column: span 2; grid-row: span 2; }
+  .item-2, .item-3, .item-4 { grid-column: span 1; grid-row: span 1; }
   .item-2 { grid-column: 3 / 5; grid-row: 1 / 2; } 
   .item-3 { grid-column: 3 / 4; grid-row: 2 / 3; } 
   .item-4 { grid-column: 4 / 5; grid-row: 2 / 3; } 
   
-  
-  /* --- THE "+78" OVERLAY --- */
   .more-overlay {
       position: absolute;
-      inset: 0; /* Cover full image */
-      background: rgba(0, 0, 0, 0.6); /* Dark tint */
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -4141,233 +3702,168 @@ img.loaded {
       z-index: 2;
   }
   
-  .plus-number {
-      font-size: 2rem;
-      font-weight: 700;
-  }
+  .plus-number { font-size: 2rem; font-weight: 700; }
+  .more-text { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
   
-  .more-text {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 5px;
-  }
-  
-  /* --- MOBILE LAYOUT (Priority) --- */
+  /* BENTO MOBILE */
   @media (max-width: 768px) {
+      /* FIX: Remove Side Gaps */
+      .gallery-bento-section {
+          padding: 35px 0 !important;
+          border-radius: 0;
+          width: 100%;
+      }
+      
+      /* Restore content alignment */
+      .gallery-bento-section .container {
+          padding-left: 15px;
+          padding-right: 15px;
+      }
+  
       .bento-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr; /* 2 Columns */
-          grid-template-rows: auto;       /* Auto height */
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: auto;
           gap: 10px;
       }
   
-      .item-1 {
-          grid-column: span 2; 
-          height: 160px;       
-      }
-  
-      .item-2 {
-          grid-column: span 1;
-          grid-row: auto;
-          height: 140px;
-      }
-      .item-3 {
-          grid-column: span 1;
-          grid-row: auto;
-          height: 140px;
-      }
-      .item-4 {
-          grid-column: span 2;
-          grid-column: span 2; 
-          height: 70px;
-      }
+      .item-1 { grid-column: span 2; height: 160px; }
+      .item-2 { grid-column: span 1; grid-row: auto; height: 140px; }
+      .item-3 { grid-column: span 1; grid-row: auto; height: 140px; }
+      .item-4 { grid-column: span 2; height: 70px; }
       
-      .item-4 .more-overlay {
-          flex-direction: row;
-          gap: 15px;
-      }
+      .item-4 .more-overlay { flex-direction: row; gap: 15px; }
       .item-4 .plus-number { font-size: 1.5rem; }
   }
+  
   /* =========================================
-   PRESTIGIOUS EVENTS LIST (Clean & Modern)
-   ========================================= */
-
-.prestige-events-section {
-   padding: 50px 20px;
-   background: #fff; /* Clean white background */
-}
-
-/* Container for the list */
-.prestige-event-list {
-   max-width: 900px; /* Keep it narrow for readability */
-   margin: 0 auto 40px auto;
-}
-
-/* THE EVENT ROW */
-.event-row {
-   display: flex;
-   align-items: center;
-   justify-content: space-between;
-   padding: 25px 0;
-   border-bottom: 1px solid #eee; /* The only divider */
-   transition: background-color 0.3s ease, transform 0.2s ease;
-   gap: 30px;
-}
-
-/* Subtle hover effect */
-.event-row:hover {
-   background-color: #fafafa;
-   transform: translateX(5px); /* Tiny slide to right */
-   border-bottom-color: var(--primary-color);
-}
-
-.event-row:last-child {
-   border-bottom: none;
-}
-
-/* 1. DATE BOX (The "Anchor") */
-.event-date-minimal {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   min-width: 70px;
-   height: 70px;
-   background-color: #f4f4f4;
-   border-radius: 12px;
-   color: #333;
-   border: 1px solid #e0e0e0;
-}
-
-.event-date-minimal .day {
-   font-size: 1.8rem;
-   font-weight: 700;
-   line-height: 1;
-   color: var(--primary-color);
-}
-
-.event-date-minimal .month {
-   font-size: 0.85rem;
-   text-transform: uppercase;
-   font-weight: 600;
-   margin-top: 2px;
-   color: #666;
-}
-
-/* 2. INFO AREA */
-.event-info {
-   flex: 1; /* Takes up all available space */
-}
-
-.event-info h3 {
-   font-size: 1.25rem;
-   margin: 0 0 8px 0;
-   color: #222;
-   font-weight: 600;
-}
-
-.event-info p {
-   font-size: 0.95rem;
-   color: #666;
-   line-height: 1.6;
-   margin: 0 0 12px 0;
-}
-
-.event-meta {
-   font-size: 0.85rem;
-   color: #888;
-   display: flex;
-   gap: 15px;
-}
-
-/* 3. THUMBNAIL IMAGE */
-.event-thumb {
-   width: 120px;
-   height: 80px;
-   border-radius: 8px;
-   overflow: hidden;
-   flex-shrink: 0; /* Prevents squishing */
-}
-
-.event-thumb img {
-   width: 100%;
-   height: 100%;
-   object-fit: cover;
-   transition: transform 0.3s ease;
-}
-
-.event-row:hover .event-thumb img {
-   transform: scale(1.05);
-}
-
-/* FOOTER LINK */
-.events-footer {
-   text-align: center;
-}
-
-.view-all-link {
-   color: var(--primary-color);
-   font-weight: 600;
-   text-decoration: none;
-   border-bottom: 2px solid transparent;
-   transition: border 0.3s;
-   font-size: 1rem;
-}
-
-.view-all-link:hover {
-   border-bottom-color: var(--primary-color);
-}
-
-/* MOBILE RESPONSIVENESS */
-@media (max-width: 768px) {
-   .event-row {
-       flex-wrap: wrap; /* Allow wrapping */
-       padding: 18px 0;
-       gap: 15px;
-   }
-
-   .event-thumb {
-       width: 100%; /* Image becomes full width banner on mobile */
-       height: 150px;
-       order: -1; /* Move image to top */
-       margin-bottom: 8px;
-   }
-
-   .event-date-minimal {
-       min-width: 60px;
-       height: 60px;
-   }
-
-   .event-date-minimal .day { font-size: 1.5rem; }
-   
-   .event-info h3 { font-size: 1.1rem; }
-}
-/* =========================================
-   MASTER ABOUT SECTION (Final Robust CSS)
-   ========================================= */
-
-   .master-about-section {
+     PRESTIGIOUS EVENTS LIST
+     ========================================= */
+  .prestige-events-section {
+      padding: 50px 20px;
+      background: #fff;
+  }
+  
+  .prestige-event-list {
+      max-width: 900px;
+      margin: 0 auto 40px auto;
+  }
+  
+  .event-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 25px 0;
+      border-bottom: 1px solid #eee;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      gap: 30px;
+  }
+  
+  .event-row:hover {
+      background-color: #fafafa;
+      transform: translateX(5px);
+      border-bottom-color: var(--primary-color);
+  }
+  
+  .event-row:last-child { border-bottom: none; }
+  
+  .event-date-minimal {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 70px;
+      height: 70px;
+      background-color: #f4f4f4;
+      border-radius: 12px;
+      color: #333;
+      border: 1px solid #e0e0e0;
+  }
+  
+  .event-date-minimal .day { font-size: 1.8rem; font-weight: 700; line-height: 1; color: var(--primary-color); }
+  .event-date-minimal .month { font-size: 0.85rem; text-transform: uppercase; font-weight: 600; margin-top: 2px; color: #666; }
+  
+  .event-info { flex: 1; }
+  .event-info h3 { font-size: 1.25rem; margin: 0 0 8px 0; color: #222; font-weight: 600; }
+  .event-info p { font-size: 0.95rem; color: #666; line-height: 1.6; margin: 0 0 12px 0; }
+  .event-meta { font-size: 0.85rem; color: #888; display: flex; gap: 15px; }
+  
+  .event-thumb {
+      width: 120px;
+      height: 80px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+  }
+  
+  .event-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+  }
+  
+  .event-row:hover .event-thumb img { transform: scale(1.05); }
+  
+  .events-footer { text-align: center; }
+  .view-all-link {
+      color: var(--primary-color);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: border 0.3s;
+      font-size: 1rem;
+  }
+  .view-all-link:hover { border-bottom-color: var(--primary-color); }
+  
+  /* EVENTS MOBILE */
+  @media (max-width: 768px) {
+      /* FIX: Full Width Section */
+      .prestige-events-section {
+          padding: 50px 0;
+      }
+      .prestige-events-section .container {
+          padding-left: 15px;
+          padding-right: 15px;
+      }
+  
+      .event-row {
+          flex-wrap: wrap;
+          padding: 18px 0;
+          gap: 15px;
+      }
+  
+      .event-thumb {
+          width: 100%;
+          height: 150px;
+          order: -1;
+          margin-bottom: 8px;
+      }
+  
+      .event-date-minimal { min-width: 60px; height: 60px; }
+      .event-date-minimal .day { font-size: 1.5rem; }
+      .event-info h3 { font-size: 1.1rem; }
+  }
+  
+  /* =========================================
+     MASTER ABOUT SECTION (Final Robust CSS)
+     ========================================= */
+  .master-about-section {
       position: relative;
       padding: 80px 20px 100px 20px;
       background: linear-gradient(180deg, #ffffff 0%, #acffe0 100%);
       overflow: visible;
       z-index: 10;
-      margin-top: -25px;
-      border-radius: 12px 12px 0 0 ;
+      margin-top: -25px; /* Floating on Desktop */
+      border-radius: 12px 12px 0 0;
   }
   
-  /* 1. HEADER */
   .about-header { text-align: center; margin-bottom: 50px; }
-  .sanskrit-tagline {
-      font-size: 1.5rem; color: var(--primary-color);
-      font-weight: 600; margin-bottom: 5px; letter-spacing: 1px;
-  }
+  .sanskrit-tagline { font-size: 1.5rem; color: var(--primary-color); font-weight: 600; margin-bottom: 5px; letter-spacing: 1px; }
   .prestige-heading { font-size: 2rem; color: #222; margin: 0; }
   .highlight-gold { color: #b8860b; }
   .divider-leaf { font-size: 1.5rem; color: #ccc; margin-top: 15px; }
   
-  /* 2. HISTORY PILL */
   .history-pill-container {
       position: relative;
       max-width: 1000px; height: 400px;
@@ -4384,17 +3880,15 @@ img.loaded {
       padding: 10px 25px; border-radius: 30px; font-weight: 700;
   }
   
-  /* 3. GRID LAYOUT (Desktop) */
   .legacy-grid {
       display: grid;
-      grid-template-columns: 1fr 1.5fr; /* Award Left, Text Right */
+      grid-template-columns: 1fr 1.5fr;
       gap: 30px 60px;
       max-width: 1100px; margin: 0 auto;
       align-items: start;
   }
   
-  /* LEFT: Award */
-  .award-column { grid-row: span 2; text-align: center; padding: 20px 0; } /* Padding prevents clip */
+  .award-column { grid-row: span 2; text-align: center; padding: 20px 0; }
   .award-circle-wrapper {
       width: 220px; height: 220px;
       margin: 0 auto 15px auto;
@@ -4404,8 +3898,7 @@ img.loaded {
       border: 1px solid #eee;
       box-shadow: 0 10px 30px rgba(184, 134, 11, 0.2);
       animation: floatBadge 4s ease-in-out infinite;
-      position: relative; /* Ensure z-index works */
-      z-index: 2;
+      position: relative; z-index: 2;
   }
   @keyframes floatBadge {
       0%, 100% { transform: translateY(0); }
@@ -4415,40 +3908,41 @@ img.loaded {
   .award-label { font-weight: 700; font-size: 1.1rem; color: #b8860b; line-height: 1.4; }
   .award-label small { color: #666; font-weight: 400; font-size: 0.9rem; }
   
-  /* RIGHT: Text */
   .text-column { text-align: left; }
   .mission-title { font-size: 2rem; line-height: 1.2; margin-bottom: 15px; color: #222; }
   .prestige-text { font-size: 1.05rem; color: #555; line-height: 1.7; margin-bottom: 20px; }
   
-  /* RIGHT BOTTOM: Features */
-  .features-column {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
-  }
+  .features-column { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
   .mini-feature-item {
       display: flex; align-items: center; gap: 10px;
       background: #fff; padding: 12px 15px;
       border-radius: 12px;
-      border: 1px solid #f0f0f0; /* Subtle border */
-      box-shadow: 0 4px 10px rgba(0,0,0,0.03); /* Soft shadow */
+      border: 1px solid #f0f0f0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
       font-size: 0.95rem; font-weight: 600; color: #444;
   }
   .mini-feature-item img { width: 28px; height: 28px; }
   
-  /* =========================================
-     MOBILE OPTIMIZATION (Fixing Clutter & Clipping)
-     ========================================= */
+  /* MASTER ABOUT MOBILE OPTIMIZATION */
   @media (max-width: 768px) {
+      /* FIX: Force Full Width, remove floating overlap */
+      .master-about-section {
+          padding: 40px 0 !important;
+          width: 100%;
+      }
       
-      .master-about-section { padding: 40px 15px !important; }
-      
-      /* Re-Order Grid: Text Top, Split Bottom */
+      /* Protect Content with internal padding */
+      .master-about-section .container {
+          padding-left: 15px;
+          padding-right: 15px;
+      }
+  
       .legacy-grid {
           display: grid;
-          grid-template-columns: 1fr 1.3fr; /* Award Left, Features Right */
+          grid-template-columns: 1fr 1.3fr;
           gap: 20px 10px;
       }
   
-      /* 1. TEXT (Span Full Width on Top) */
       .text-column {
           grid-column: span 2;
           text-align: center;
@@ -4461,33 +3955,27 @@ img.loaded {
           margin-bottom: 10px; padding: 0 5px; 
       }
   
-      /* 2. AWARD (Bottom Left) */
       .award-column {
           grid-row: auto;
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
-          /* Padding Fix for Clipping Animation */
           padding-top: 15px !important; 
           padding-bottom: 15px !important;
       }
-      .award-circle-wrapper {
-          width: 100px; height: 100px; /* Compact */
-          margin-bottom: 8px;
-      }
+      .award-circle-wrapper { width: 100px; height: 100px; margin-bottom: 8px; }
       .award-img-floating { width: 65px; }
       .award-label { font-size: 0.75rem; line-height: 1.2; }
       .award-label small { font-size: 0.65rem; }
   
-      /* 3. FEATURES (Bottom Right) */
       .features-column {
           display: flex; flex-direction: column; 
           gap: 8px; justify-content: center;
-          padding: 5px; /* Space for shadows */
+          padding: 5px;
       }
       .mini-feature-item {
           padding: 8px 10px; font-size: 0.8rem;
           white-space: nowrap;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.05); /* Lighter shadow on mobile */
+          box-shadow: 0 2px 6px rgba(0,0,0,0.05);
       }
       .mini-feature-item img { width: 20px; height: 20px; }
   
