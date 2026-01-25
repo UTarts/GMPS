@@ -1,13 +1,12 @@
 
 :root {
-   /* New Modern Color Palette */
-   --primary-color: #4A55A2;  /* A calm, modern blue */
-   --accent-color: #FFA500;   /* A friendly, vibrant orange */
-   --background-color: #F9F9FB; /* A very light, clean grey */
-   --surface-color: #FFFFFF;  /* For cards and headers */
-   --text-primary: #222222;   /* Dark, readable text */
-   --text-secondary: #6c757d; /* For captions and lighter text */
-   --border-color: #EEEEEE;   /* Light border for separation */
+   --primary-color: #4A55A2;  
+   --accent-color: #FFA500;  
+   --background-color: #F9F9FB;
+   --surface-color: #FFFFFF; 
+   --text-primary: #222222;   
+   --text-secondary: #6c757d; 
+   --border-color: #EEEEEE;   
    --white-color: #ffffff;
 }
 
@@ -29,10 +28,6 @@ body {
    color: #333;
 }
 
-/* =================================================== */
-/* NEW LOGO-ONLY HEADER STYLES                         */
-/* =================================================== */
-
 /* 1. Main Wrapper */
 .new-site-header {
    background: #fff;
@@ -53,15 +48,14 @@ body {
 }
 
 .header-brand-img {
-   height: 70px; /* Adjust size as needed */
+   height: 70px; 
    width: auto;
    object-fit: contain;
    display: block;
 }
 
-/* 3. Bottom Section: Navigation Bar (Desktop) */
 .header-nav-row {
-   background-color: #444; /* Dark Grey */
+   background-color: #444; 
    padding: 0;
 }
 
@@ -80,7 +74,7 @@ body {
    text-decoration: none;
    font-size: 1rem;
    font-weight: 500;
-   text-transform: uppercase; /* Matches screenshot */
+   text-transform: uppercase; 
    border-right: 1px solid rgba(255,255,255,0.1);
 }
 .new-desktop-nav li:first-child a { border-left: 1px solid rgba(255,255,255,0.1); }
@@ -89,9 +83,8 @@ body {
    background-color: var(--primary-color, #4A55A2);
 }
 
-/* 4. Mobile Menu Bar (Matches Screenshot) */
 .mobile-nav-bar {
-   display: none; /* Hidden on desktop */
+   display: none; 
    background-color: #444;
    padding: 10px 20px;
    color: #fff;
@@ -122,21 +115,18 @@ body {
        padding: 5px 10px;
    }
    .header-brand-img {
-       height: 50px; /* Smaller logo on mobile */
+       height: 50px; 
        padding: 0%;
    }
    
-   /* Hide Desktop Nav */
    .new-desktop-nav {
        display: none;
    }
-   
-   /* Show Mobile Bar */
+
    .mobile-nav-bar {
        display: flex;
    }
    
-   /* Hide Sidebar Trigger if we use this new bar */
    .hamburger { display: none !important; }
 }
 
@@ -198,11 +188,9 @@ body {
    z-index: 3;
    text-align: left;
    
-   /* 1. Remove/Reduce Padding */
    padding-bottom: 15px; 
    padding-left: 0; 
    
-   /* 2. Force alignment to the left */
    margin-left: 0;
    margin-right: auto; 
    
@@ -253,7 +241,6 @@ section.about {
    
 }
 
-/* extra styles for about us section starts here */
 .about-section {
    padding: 1rem 2rem;
    text-align: center;
@@ -554,7 +541,6 @@ font-family: Arial, sans-serif;
 }
 
 
-/* Adjusting navigation for mobile */
 .nav-links {
 list-style: none;
 display: flex;
@@ -583,24 +569,24 @@ footer {
    text-align: center;
 }
 
-/* Header adjustments for mobile */
+
 header {
-   flex-direction: column; /* Stack elements vertically */
-   padding: 0.25rem; /* Reduce padding */
+   flex-direction: column;
+   padding: 0.25rem; 
    text-align: center;
 }
 
 .nav-links {
-   flex-direction: row; /* Display links horizontally */
-   justify-content: center; /* Center-align links */
-   gap: 0.5rem; /* Reduce spacing between links */
-   margin-top: 0.5rem; /* Add a bit of spacing below the logo */
-   flex-wrap: wrap; /* Allow wrapping to the next line if needed */
+   flex-direction: row; 
+   justify-content: center; 
+   gap: 0.5rem; 
+   margin-top: 0.5rem; 
+   flex-wrap: wrap; 
 }
 
 .nav-links a {
-   font-size: 0.8rem; /* Reduce font size for links */
-   padding: 0.4rem; /* Adjust padding for better fit */
+   font-size: 0.8rem;
+   padding: 0.4rem; 
 }
 
 .logo-container {
@@ -622,10 +608,10 @@ header {
    white-space: nowrap;
 }
 
-/* General responsive styles  ####################################### */
+/* General responsive styles */
 
 body {
-   font-size: 14px; /* Base font size for mobile */
+   font-size: 14px;
 }
 
 h1 {
@@ -1165,7 +1151,7 @@ table th {
 }
 
 .faq-answer {
-   display: none; /* Hide answers by default */
+   display: none;
    font-size: 1rem;
    color: #555;
    line-height: 1.6;
@@ -1498,7 +1484,7 @@ body {
    transition: transform 0.3s ease-in-out;
    display: flex;
    flex-direction: column;
-   justify-content: flex-end;  /* Move navigation options to the bottom */
+   justify-content: flex-end;
 }
 
 /* Hide Sidebar on Mobile */
@@ -1509,7 +1495,7 @@ body {
 .sidebar ul {
    list-style: none;
    padding: 0;
-   margin-top: auto;  /* Push items to the bottom */
+   margin-top: auto;
 }
 
 .sidebar ul li {
@@ -1543,7 +1529,7 @@ body {
    border: none;
    position: fixed;
    left: 10px;
-   bottom: 10px;  /* Move hamburger button to bottom */
+   bottom: 10px;
    z-index: 1000;
 }
 
@@ -1571,7 +1557,6 @@ body {
 
 /* 🔹 RESPONSIVE STYLES 🔹 */
 @media screen and (max-width: 768px) {
-   /* Adjust Dashboard Layout */
    .dashboard {
        flex-direction: column;
    }
@@ -1596,7 +1581,7 @@ body {
    /* Adjust Content Layout */
    .content {
       margin-left: 0;
-      padding: 10px !important; /* Remove content padding */
+      padding: 10px !important;
   }
 
   /* FORCE sections to touch the screen edges */
@@ -1608,7 +1593,6 @@ body {
       width: 100% !important;
   }
   
-  /* Add small padding to titles so they don't touch the edge */
   .dashboard section h2, 
   .dashboard section h3,
   .dashboard section h4 {
@@ -1616,14 +1600,12 @@ body {
       padding-right: 15px;
   }
 
-   /* Center Profile Elements */
    .profile-card {
        flex-direction: column;
        align-items: center;
        text-align: center;
    }
 
-   /* Allow Tables to Scroll */
    table {
        display: block;
        overflow-x: auto;
@@ -1666,7 +1648,6 @@ body {
    }
 }   
  
-   /* Ensure table containers do not overflow */
 .table-container {
    width: 100%;
    overflow-x: auto;
@@ -3854,7 +3835,7 @@ img.loaded {
       background: linear-gradient(180deg, #ffffff 0%, #acffe0 100%);
       overflow: visible;
       z-index: 10;
-      margin-top: -25px; /* Floating on Desktop */
+      margin-top: -25px;
       border-radius: 12px 12px 0 0;
   }
   
@@ -3925,13 +3906,11 @@ img.loaded {
   
   /* MASTER ABOUT MOBILE OPTIMIZATION */
   @media (max-width: 768px) {
-      /* FIX: Force Full Width, remove floating overlap */
       .master-about-section {
           padding: 40px 0 !important;
           width: 100%;
       }
       
-      /* Protect Content with internal padding */
       .master-about-section .container {
           padding-left: 15px;
           padding-right: 15px;
