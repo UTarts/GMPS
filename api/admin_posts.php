@@ -7,10 +7,11 @@ header("Access-Control-Allow-Headers: Content-Type");
 header('Content-Type: application/json');
 
 require_once 'config.php';
+require_once 'NotificationService.php'; 
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
-
+$notifier = new NotificationService($conn); 
 // --- 1. FETCH ALL POSTS (For Admin Dashboard) ---
 if ($action === 'fetch_all_posts') {
     $data = [
@@ -22,19 +23,19 @@ if ($action === 'fetch_all_posts') {
 
     // Notices
     $res = $conn->query("SELECT * FROM events_announcements ORDER BY id DESC");
-    while($r = $res->fetch_assoc()) $data['notices'][] = $r;
+    if ($res) while($r = $res->fetch_assoc()) $data['notices'][] = $r;
 
     // Updates
     $res = $conn->query("SELECT * FROM events_daily_updates ORDER BY id DESC");
-    while($r = $res->fetch_assoc()) $data['updates'][] = $r;
+    if ($res) while($r = $res->fetch_assoc()) $data['updates'][] = $r;
 
     // Events
     $res = $conn->query("SELECT * FROM events_upcoming ORDER BY id DESC");
-    while($r = $res->fetch_assoc()) $data['events'][] = $r;
+    if ($res) while($r = $res->fetch_assoc()) $data['events'][] = $r;
 
     // What's Today
     $res = $conn->query("SELECT * FROM whats_today LIMIT 1");
-    if($r = $res->fetch_assoc()) $data['whats_today'] = $r;
+    if ($res && $r = $res->fetch_assoc()) $data['whats_today'] = $r;
 
     echo json_encode(['status' => 'success', 'data' => $data]);
     exit;
@@ -54,34 +55,70 @@ if ($method === 'POST' && in_array($action, ['save_notice', 'save_update', 'save
         return null;
     };
 
+    $success = false;
+    $errorMsg = "Unknown Error";
+
+    // A. SAVE NOTICE
     if ($action === 'save_notice') {
         $title = $conn->real_escape_string($_POST['title']);
         $content = $conn->real_escape_string($_POST['content']);
         $img = $uploadFile('image');
         
+        // Exact logic from your working code
         $sql = "INSERT INTO events_announcements (title, content, image_url, display_order) VALUES ('$title', '$content', '$img', 0)";
         if($img === null) $sql = "INSERT INTO events_announcements (title, content, display_order) VALUES ('$title', '$content', 0)";
         
-        $conn->query($sql);
+        if($conn->query($sql)) {
+            $success = true;
+            // TRIGGER NOTIFICATION
+            $notifier->broadcastToAll("📢 New Notice: $title", "Tap to check the latest school announcement.");
+        } else {
+            $errorMsg = $conn->error;
+        }
     }
 
+    // B. SAVE UPDATE
     if ($action === 'save_update') {
         $text = $conn->real_escape_string($_POST['text']);
         $img = $uploadFile('image');
+        
+        // Exact logic from your working code
         $sql = "INSERT INTO events_daily_updates (update_text, image_url, display_order) VALUES ('$text', '$img', 0)";
-        $conn->query($sql);
+
+        if($conn->query($sql)) {
+            $success = true;
+            // TRIGGER NOTIFICATION
+            $shortText = substr($text, 0, 50) . '...';
+            $notifier->broadcastToAll("🔔 Daily Update", $shortText);
+        } else {
+            $errorMsg = $conn->error;
+        }
     }
 
+    // C. SAVE EVENT
     if ($action === 'save_event') {
         $title = $conn->real_escape_string($_POST['title']);
         $desc = $conn->real_escape_string($_POST['description']);
         $date = $conn->real_escape_string($_POST['date']);
         $img = $uploadFile('image');
+        
+        // Exact logic from your working snippet (NO created_at)
         $sql = "INSERT INTO events_upcoming (title, event_date, description, image_url, display_order) VALUES ('$title', '$date', '$desc', '$img', 0)";
-        $conn->query($sql);
+
+        if($conn->query($sql)) {
+            $success = true;
+            $formattedDate = date("d/m/Y", strtotime($date)); 
+            $notifier->broadcastToAll("🗓️ New Event: $title", "Mark your calendars for $formattedDate!");
+        } else {
+            $errorMsg = $conn->error;
+        }
     }
 
-    echo json_encode(['status' => 'success']);
+    if ($success) {
+        echo json_encode(['status' => 'success']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => $errorMsg]);
+    }
     exit;
 }
 
@@ -95,8 +132,15 @@ if ($action === 'delete_post') {
     if($type === 'update') $table = 'events_daily_updates';
     if($type === 'event') $table = 'events_upcoming';
     
-    if($table) $conn->query("DELETE FROM $table WHERE id=$id");
-    echo json_encode(['status' => 'success']);
+    if($table) {
+        if ($conn->query("DELETE FROM $table WHERE id=$id")) {
+            echo json_encode(['status' => 'success']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => $conn->error]);
+        }
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid type']);
+    }
     exit;
 }
 
@@ -110,12 +154,22 @@ if ($action === 'save_whats_today') {
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $name = 'today_' . time() . '.jpg'; // Unique name
         $target = __DIR__ . '/../GMPSimages/' . $name;
-        move_uploaded_file($_FILES['image']['tmp_name'], $target);
-        $dbPath = 'GMPSimages/' . $name;
         
-        $conn->query("INSERT INTO whats_today (image_url) VALUES ('$dbPath')");
+        if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
+            $dbPath = 'GMPSimages/' . $name;
+            if ($conn->query("INSERT INTO whats_today (image_url) VALUES ('$dbPath')")) {
+                // TRIGGER NOTIFICATION
+                $notifier->broadcastToAll("🌅 What's Today!", "Check out today's special poster in the app.");
+                echo json_encode(['status' => 'success']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => $conn->error]);
+            }
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Upload failed']);
+        }
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'No file uploaded']);
     }
-    echo json_encode(['status' => 'success']);
     exit;
 }
 
@@ -143,11 +197,13 @@ if ($action === 'get_whats_today_public') {
     }
     exit;
 }
+
 // --- 5. GALLERY UPLOAD HANDLER (NEW) ---
 
 if ($action === 'save_gallery_item') {
     $caption = $conn->real_escape_string($_POST['caption']);
     $category = $conn->real_escape_string($_POST['category']);
+    $successCount = 0;
     
     // A. Handle Multiple Images
     if (isset($_FILES['images'])) {
@@ -162,31 +218,42 @@ if ($action === 'save_gallery_item') {
                 if (move_uploaded_file($_FILES['images']['tmp_name'][$i], $target)) {
                     $dbPath = 'GMPSimages/' . $name;
                     // Insert each image as a separate row
-                    $conn->query("INSERT INTO gallery_items (image_url, caption, category, created_at) VALUES ('$dbPath', '$caption', '$category', NOW())");
+                    if ($conn->query("INSERT INTO gallery_items (image_url, caption, category, created_at) VALUES ('$dbPath', '$caption', '$category', NOW())")) {
+                        $successCount++;
+                    }
                 }
             }
         }
     } 
     // B. Handle Video
-    elseif (isset($_POST['video_url'])) {
+    elseif (isset($_POST['video_url']) && !empty($_POST['video_url'])) {
         $url = $conn->real_escape_string($_POST['video_url']);
-        $conn->query("INSERT INTO gallery_videos (video_url, caption, category, created_at) VALUES ('$url', '$caption', '$category', NOW())");
+        if ($conn->query("INSERT INTO gallery_videos (video_url, caption, category, created_at) VALUES ('$url', '$caption', '$category', NOW())")) {
+            $successCount++;
+        }
     }
 
-    echo json_encode(['status' => 'success']);
+    if($successCount > 0) {
+        // TRIGGER NOTIFICATION
+        $notifier->broadcastToAll("📸 New Gallery Upload", "New photos/videos added to the $category gallery.");
+        echo json_encode(['status' => 'success']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'No items saved']);
+    }
     exit;
 }
+
 // --- 6. FETCH GALLERY HISTORY (New) ---
 if ($action === 'fetch_gallery_history') {
     $history = [];
     
     // Fetch Photos (Limit 50)
     $res = $conn->query("SELECT id, image_url as url, caption, 'photo' as type, created_at FROM gallery_items ORDER BY id DESC LIMIT 50");
-    while($r = $res->fetch_assoc()) $history[] = $r;
+    if ($res) while($r = $res->fetch_assoc()) $history[] = $r;
 
     // Fetch Videos (Limit 20)
     $res = $conn->query("SELECT id, video_url as url, caption, 'video' as type, created_at FROM gallery_videos ORDER BY id DESC LIMIT 20");
-    while($r = $res->fetch_assoc()) $history[] = $r;
+    if ($res) while($r = $res->fetch_assoc()) $history[] = $r;
 
     // Sort combined list by date desc
     usort($history, function($a, $b) {
@@ -196,6 +263,7 @@ if ($action === 'fetch_gallery_history') {
     echo json_encode(['status' => 'success', 'data' => array_slice($history, 0, 50)]);
     exit;
 }
+
 // --- 7. DELETE GALLERY ITEM (New) ---
 if ($action === 'delete_gallery_item') {
     $id = (int)$_POST['id'];

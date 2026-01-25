@@ -3493,8 +3493,8 @@ img.loaded {
   .section-header-left {
       max-width: 1200px;
       margin: 0 auto 20px auto;
-      text-align: left;
-  }
+      text-align: center !important ;
+   }
   
   .testimonial-slider {
       display: flex;

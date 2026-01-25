@@ -1,8 +1,6 @@
 <?php
-// api/config.php
-
-// 1. Allow Access from your Next.js App (CORS)
-header("Access-Control-Allow-Origin: *"); // For dev, we allow all. In production, we will lock this to your domain.
+date_default_timezone_set('Asia/Kolkata');
+header("Access-Control-Allow-Origin: *"); 
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
@@ -27,6 +25,7 @@ if ($conn->connect_error) {
     echo json_encode(["status" => "error", "message" => "Database connection failed"]);
     exit;
 }
+$conn->query("SET time_zone = '+05:30'");
 
 session_start();
 ?>

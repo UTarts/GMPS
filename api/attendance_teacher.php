@@ -5,9 +5,13 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
 
 require_once 'config.php';
+require_once 'NotificationService.php'; // <--- IMPORT SERVICE
 
 $input = json_decode(file_get_contents("php://input"), true);
 $action = $input['action'] ?? '';
+
+// Initialize Notifier
+$notifier = new NotificationService($conn);
 
 // 1. FETCH STUDENTS FOR ATTENDANCE (Card Stack Data)
 if ($action === 'fetch_class') {
@@ -39,7 +43,7 @@ if ($action === 'fetch_class') {
     exit;
 }
 
-// 2. SAVE BULK ATTENDANCE
+// 2. SAVE BULK ATTENDANCE (With Notification Injection)
 if ($action === 'save_batch') {
     $teacher_id = (int)$input['teacher_id'];
     $class_id = (int)$input['class_id'];
@@ -48,11 +52,43 @@ if ($action === 'save_batch') {
 
     $stmt = $conn->prepare("INSERT INTO daily_attendance (student_id, class_id, date, status, recorded_by) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE status = VALUES(status), recorded_by = VALUES(recorded_by)");
     
+    // Arrays to collect IDs for notifications
+    $presentIds = [];
+    $absentIds = [];
+
     foreach ($records as $rec) {
         $sid = (int)$rec['student_id'];
         $stat = $rec['status'];
         $stmt->bind_param("iisss", $sid, $class_id, $date, $stat, $teacher_id);
         $stmt->execute();
+
+        // Sort into lists for notification
+        if ($stat === 'present') {
+            $presentIds[] = $sid;
+        } elseif ($stat === 'absent') {
+            $absentIds[] = $sid;
+        }
+    }
+
+    // --- TRIGGER NOTIFICATIONS ---
+    $formattedDate = date("d/m/Y", strtotime($date));
+
+    // 1. Notify PRESENT Students
+    if (!empty($presentIds)) {
+        $notifier->sendToUserIds(
+            $presentIds, 
+            "✅ Attendance: Present", 
+            "You have been marked PRESENT for today ($formattedDate)."
+        );
+    }
+
+    // 2. Notify ABSENT Students
+    if (!empty($absentIds)) {
+        $notifier->sendToUserIds(
+            $absentIds, 
+            "❌ Attendance: Absent", 
+            "You have been marked ABSENT for today ($formattedDate)."
+        );
     }
     
     echo json_encode(['status'=>'success', 'message'=>'Attendance saved']);
@@ -102,10 +138,23 @@ if ($action === 'mark_holiday') {
     if ($stu_res->num_rows > 0) {
         $stmt = $conn->prepare("INSERT INTO daily_attendance (student_id, class_id, date, status, recorded_by) VALUES (?, ?, ?, 'holiday', ?) ON DUPLICATE KEY UPDATE status = 'holiday', recorded_by = VALUES(recorded_by)");
         
+        $idsForNotification = [];
+        
         while($s = $stu_res->fetch_assoc()) {
             $sid = (int)$s['id'];
             $stmt->bind_param("iisi", $sid, $class_id, $date, $teacher_id);
             $stmt->execute();
+            $idsForNotification[] = $sid;
+        }
+
+        // Notify Everyone about Holiday
+        if (!empty($idsForNotification)) {
+            $formattedDate = date("d/m/Y", strtotime($date));
+            $notifier->sendToUserIds(
+                $idsForNotification, 
+                "🎉 Holiday Alert", 
+                "School is closed on $formattedDate. Enjoy your day!"
+            );
         }
     }
 

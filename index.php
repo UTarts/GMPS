@@ -220,7 +220,7 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
     <section class="gallery-bento-section">
         <div class="container">
             
-            <div class="section-header-left">
+            <div class="section-header-left" style="text-align: center;">
                 <h4 class="mini-heading">Campus Life</h4>
                 <h3 class="main-heading">Life at <span class="highlight">GMPS</span></h3>
                 <div class="heading-line"></div>
@@ -258,7 +258,7 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
 
     <section id="browser-admin-thoughts" class="admin-section">
         <div class="container">
-        <div class="section-header-left">
+        <div class="section-header-left" style="text-align: center;">
                 <h4 class="mini-heading">Insights from the</h4>
                 <h3 class="main-heading">Administration</h3>
                 <div class="heading-line"></div>
@@ -288,7 +288,7 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
   
     <section class="testimonials-modern">
         <div class="container">
-            <div class="section-header-left">
+            <div class="section-header-left" style="text-align: center;">
                 <h4 class="mini-heading">Parent Voices</h4>
                 <h3 class="main-heading">What They Say About <span class="highlight">GMPS</span></h3>
                 <div class="heading-line"></div>
