@@ -177,6 +177,11 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
             <p>We follow a strict CBSE curriculum that prepares students not just for exams, but for competitive success in IIT-JEE and NEET.</p>
             <h4>3. Unmatched Sports Facilities</h4>
             <p>We believe in holistic development. Our sports complex allows students to excel physically while our labs train them mentally.</p>
+            <h4>4. Experienced and Dedicated Faculty</h4>
+            <p>Our highly qualified teachers focus on individual attention, concept clarity, and continuous mentoring to help every child reach their full potential.</p>
+
+            <h4>5. Strong Focus on Discipline and Values</h4>
+            <p>Along with academics, we nurture moral values, discipline, and confidence, shaping students into responsible and well-rounded individuals.</p>
             <div class="blog-quote">"Education is the passport to the future."</div>
             <p>Visit us today to see the difference yourself.</p>
         </div>

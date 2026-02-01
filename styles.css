@@ -3799,7 +3799,6 @@ img.loaded {
   
   /* EVENTS MOBILE */
   @media (max-width: 768px) {
-      /* FIX: Full Width Section */
       .prestige-events-section {
           padding: 50px 0;
       }
