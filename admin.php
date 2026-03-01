@@ -3,7 +3,13 @@
 if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) ob_start("ob_gzhandler"); else ob_start();
 
 require_once 'includes/db_connect.php';
+// If Accountant tries to access Main Admin Panel, kick them to Accounts
+if (isset($_SESSION['adminUser']) && $_SESSION['adminUser']['level'] == 5) {
+    header("Location: accounts.php");
+    exit;
+}
 $currentPage = basename($_SERVER['PHP_SELF']);
+
 
 // --- HELPER: Alert Session Setter ---
 function setAlert($type, $msg) {
@@ -32,12 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action']) && isset($
         ];
         // REMEMBER ME
         if (isset($_POST['remember'])) {
-          setRememberMe($conn, $row['id'], 'admin'); 
-      }
-      
-      // REDIRECT LOGIC - Standard Browser Redirect Only
-      header("Location: " . basename($_SERVER['PHP_SELF']));
-      exit;
+            setRememberMe($conn, $row['id'], 'admin'); 
+          }
+        
+          // REDIRECT LOGIC
+          if ($row['level'] == 5) {
+              // Accountants go to Accounts Dashboard
+              header("Location: accounts.php");
+          } else {
+              // Everyone else stays on Admin Dashboard
+              header("Location: " . basename($_SERVER['PHP_SELF']));
+          }
+          exit;
       }
     }
     $loginError = "Invalid credentials. Please try again.";
@@ -462,157 +474,180 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 
 // ---- Handle 'endOfSession' action ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action']) && $_POST['action'] === 'endOfSession') {
-  if (!isset($_SESSION['adminUser']['level']) || $_SESSION['adminUser']['level'] != 1) {
-      die("ACCESS DENIED: You do not have permission to perform this action.");
-  }
-
-  $master_password = $_POST['masterPassword'];
-  $archive_name = preg_replace('/[^a-zA-Z0-9-_\.]/', '', $_POST['archiveName']);
-
-  // 1. Verify Master Password
-  $hash_res = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'master_password_hash'");
-  $hash_row = $hash_res->fetch_assoc();
-  $stored_hash = $hash_row ? trim($hash_row['setting_value']) : '';
-  if (!$stored_hash || !password_verify($master_password, $stored_hash)) {
-      setAlert('error', 'Master password incorrect!');
-      header("Location: admin.php?error=master_password#endOfSession");
-      exit;
-  }
-
- // --- STEP 1: ARCHIVE DATA AS A PDF ---
- require_once 'includes/fpdf.php';
-
- $pdf = new FPDF('P', 'mm', 'A4');
- $pdf->SetFont('Arial', 'B', 16);
- $pdf->AddPage();
- $pdf->Cell(0, 10, 'Student Data Archive: Session ' . (date('Y') - 1) . '-' . date('Y'), 0, 1, 'C');
- $pdf->SetFont('Arial', '', 10);
- $pdf->Cell(0, 10, 'Generated on: ' . date('Y-m-d H:i:s'), 0, 1, 'C');
- $pdf->Ln(10);
-
- $students_res = $conn->query("SELECT s.*, c.name as class_name FROM students s JOIN classes c ON s.class_id = c.id ORDER BY c.sort_order");
- 
- if($students_res && $students_res->num_rows > 0) {
-     while($student = $students_res->fetch_assoc()){
-         $sid = $student['id'];
-         
-         $pdf->SetFont('Arial', 'B', 14);
-         $pdf->Cell(0, 10, 'Student: ' . $student['name'] . ' (ID: ' . $student['login_id'] . ')', 1, 1, 'C');
-         $pdf->SetFont('Arial', '', 12);
-         
-         $image_path = $student['profile_pic'];
-         if (empty($image_path) || !file_exists(__DIR__ . '/' . $image_path)) {
-             $image_path = 'GMPSimages/default_student.png'; 
-         }
-         $pdf->Image($image_path, 160, $pdf->GetY() + 12, 30, 30);
-         
-         $pdf->Cell(140, 8, 'Class: ' . $student['class_name'], 'L', 1);
-         $pdf->Cell(140, 8, "Father's Name: " . $student['father_name'], 'L', 1);
-         $pdf->Cell(140, 8, "Mother's Name: " . $student['mother_name'], 'L', 1);
-         $pdf->Cell(140, 8, 'Contact: ' . $student['contact'], 'L', 1);
-         $pdf->Cell(140, 8, 'Address: ' . $student['address'], 'LB', 1);
-         $pdf->Ln(5);
-
-         // Attendance Table
-         $pdf->SetFont('Arial', 'B', 12);
-         $pdf->Cell(0, 8, 'Attendance Record', 0, 1);
-         $pdf->SetFont('Arial', 'B', 10);
-         $pdf->Cell(47.5, 7, 'Month', 1, 0, 'C');
-         $pdf->Cell(47.5, 7, 'Days Present', 1, 0, 'C');
-         $pdf->Cell(47.5, 7, 'Days Absent', 1, 0, 'C');
-         $pdf->Cell(47.5, 7, 'Percentage', 1, 1, 'C');
-         $pdf->SetFont('Arial', '', 10);
-         $att_res = $conn->query("SELECT month, days_present, days_absent FROM attendance WHERE student_id=$sid ORDER BY year, month");
-         if ($att_res && $att_res->num_rows > 0) {
-             while($att = $att_res->fetch_assoc()){
-                 $month_name = date('F', mktime(0, 0, 0, $att['month'], 10));
-                 $total = $att['days_present'] + $att['days_absent'];
-                 $percent = $total > 0 ? round(($att['days_present'] / $total) * 100) . '%' : 'N/A';
-                 $pdf->Cell(47.5, 7, $month_name, 1, 0);
-                 $pdf->Cell(47.5, 7, $att['days_present'], 1, 0, 'C');
-                 $pdf->Cell(47.5, 7, $att['days_absent'], 1, 0, 'C');
-                 $pdf->Cell(47.5, 7, $percent, 1, 1, 'C');
-             }
-         } else {
-             $pdf->Cell(0, 7, 'No attendance records found.', 1, 1, 'C');
-         }
-         $pdf->Ln(5);
-
-         // Marks Tables
-         $pdf->SetFont('Arial', 'B', 12);
-         $pdf->Cell(0, 8, 'Exam Results', 0, 1);
-         $exams_res = $conn->query("SELECT DISTINCT e.id, e.name as exam_name, e.max_marks FROM exams e JOIN marks m ON e.id = m.exam_id WHERE m.student_id=$sid ORDER BY e.id");
-         if($exams_res && $exams_res->num_rows > 0) {
-              while($exam = $exams_res->fetch_assoc()) {
-                 $pdf->SetFont('Arial', 'B', 10);
-                 $pdf->Cell(0, 7, $exam['exam_name'], 1, 1, 'L');
-                 $pdf->Cell(130, 7, 'Subject', 1, 0, 'C');
-                 $pdf->Cell(60, 7, 'Marks', 1, 1, 'C');
-                 $pdf->SetFont('Arial', '', 10);
-                 $marks_res = $conn->query("SELECT s.name as subject_name, m.marks_obtained FROM marks m JOIN subjects s ON m.subject_code = s.code WHERE m.student_id=$sid AND m.exam_id={$exam['id']} ORDER BY s.name");
-                 while($mark = $marks_res->fetch_assoc()){
-                    $pdf->Cell(130, 7, $mark['subject_name'], 1, 0);
-                    $pdf->Cell(60, 7, $mark['marks_obtained'] . ' / ' . $exam['max_marks'], 1, 1, 'C');
-                 }
-              }
-         } else {
-             $pdf->SetFont('Arial', '', 10);
-             $pdf->Cell(0, 7, 'No marks found for this student.', 1, 1, 'C');
-         }
-         $pdf->AddPage();
-     }
- } else {
-     $pdf->Cell(0, 10, 'No students found in the database at the time of archival.', 0, 1);
- }
-
- if (!is_dir(__DIR__ . '/archives')) { mkdir(__DIR__ . '/archives'); }
- $pdf->Output('F', __DIR__ . '/archives/' . $archive_name . '.pdf');
-
-  // --- STEP 2: IDENTIFY GRADUATING & FORK CLASSES ---
-  $graduating_class_id = null;
-  $fork_class_ids = [];
-  $promo_map_res = $conn->query("SELECT p.current_class_id, c.sort_order FROM class_promotions p JOIN classes c ON p.current_class_id = c.id WHERE p.next_class_id IS NULL ORDER BY c.sort_order DESC");
-  if ($promo_map_res && $promo_map_res->num_rows > 0) {
-      $graduating_class = $promo_map_res->fetch_assoc();
-      $graduating_class_id = $graduating_class['current_class_id'];
-      while($row = $promo_map_res->fetch_assoc()) {
-          $fork_class_ids[] = (int)$row['current_class_id'];
-      }
-  }
+    if (!isset($_SESSION['adminUser']['level']) || $_SESSION['adminUser']['level'] != 1) {
+        die("ACCESS DENIED: You do not have permission to perform this action.");
+    }
   
-  if (!empty($fork_class_ids)) {
-      $fork_ids_str = implode(',', $fork_class_ids);
-      $conn->query("UPDATE students SET status = 'awaiting_stream' WHERE class_id IN ($fork_ids_str)");
+    $master_password = $_POST['masterPassword'];
+    $archive_name = preg_replace('/[^a-zA-Z0-9-_\.]/', '', $_POST['archiveName']);
+  
+    // 1. Verify Master Password (Securely)
+    $hash_res = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'master_password_hash'");
+    $hash_row = $hash_res->fetch_assoc();
+    $stored_hash = $hash_row ? trim($hash_row['setting_value']) : '';
+    if (!$stored_hash || !password_verify($master_password, $stored_hash)) {
+        setAlert('error', 'Master password incorrect!');
+        header("Location: admin.php?error=master_password#endOfSession");
+        exit;
+    }
+  
+   // --- STEP 1: ARCHIVE DATA AS A PDF ---
+   require_once 'includes/fpdf.php';
+   require_once 'api/session_manager.php';
+   $current_sess = get_current_session($conn);
+  
+   $pdf = new FPDF('P', 'mm', 'A4');
+   $pdf->SetFont('Arial', 'B', 16);
+   $pdf->AddPage();
+   $pdf->Cell(0, 10, 'Student Data Archive: Session ' . $current_sess, 0, 1, 'C');
+   $pdf->SetFont('Arial', '', 10);
+   $pdf->Cell(0, 10, 'Generated on: ' . date('Y-m-d H:i:s'), 0, 1, 'C');
+   $pdf->Ln(10);
+  
+   $students_res = $conn->query("SELECT s.*, c.name as class_name FROM students s JOIN classes c ON s.class_id = c.id ORDER BY c.sort_order");
+   
+   if($students_res && $students_res->num_rows > 0) {
+       while($student = $students_res->fetch_assoc()){
+           $sid = $student['id'];
+           
+           $pdf->SetFont('Arial', 'B', 14);
+           $pdf->Cell(0, 10, 'Student: ' . $student['name'] . ' (ID: ' . $student['login_id'] . ')', 1, 1, 'C');
+           $pdf->SetFont('Arial', '', 12);
+           
+           $image_path = $student['profile_pic'];
+           if (empty($image_path) || !file_exists(__DIR__ . '/' . $image_path)) {
+               $image_path = 'GMPSimages/default_student.png'; 
+           }
+           $pdf->Image($image_path, 160, $pdf->GetY() + 12, 30, 30);
+           
+           $pdf->Cell(140, 8, 'Class: ' . $student['class_name'], 'L', 1);
+           $pdf->Cell(140, 8, "Father's Name: " . $student['father_name'], 'L', 1);
+           $pdf->Cell(140, 8, "Mother's Name: " . $student['mother_name'], 'L', 1);
+           $pdf->Cell(140, 8, 'Contact: ' . $student['contact'], 'L', 1);
+           $pdf->Cell(140, 8, 'Address: ' . $student['address'], 'LB', 1);
+           $pdf->Ln(5);
+  
+           // Attendance Table
+           $pdf->SetFont('Arial', 'B', 12);
+           $pdf->Cell(0, 8, 'Attendance Record', 0, 1);
+           $pdf->SetFont('Arial', 'B', 10);
+           $pdf->Cell(47.5, 7, 'Month', 1, 0, 'C');
+           $pdf->Cell(47.5, 7, 'Days Present', 1, 0, 'C');
+           $pdf->Cell(47.5, 7, 'Days Absent', 1, 0, 'C');
+           $pdf->Cell(47.5, 7, 'Percentage', 1, 1, 'C');
+           $pdf->SetFont('Arial', '', 10);
+           $att_res = $conn->query("SELECT month, days_present, days_absent FROM attendance WHERE student_id=$sid ORDER BY year, month");
+           if ($att_res && $att_res->num_rows > 0) {
+               while($att = $att_res->fetch_assoc()){
+                   $month_name = date('F', mktime(0, 0, 0, $att['month'], 10));
+                   $total = $att['days_present'] + $att['days_absent'];
+                   $percent = $total > 0 ? round(($att['days_present'] / $total) * 100) . '%' : 'N/A';
+                   $pdf->Cell(47.5, 7, $month_name, 1, 0);
+                   $pdf->Cell(47.5, 7, $att['days_present'], 1, 0, 'C');
+                   $pdf->Cell(47.5, 7, $att['days_absent'], 1, 0, 'C');
+                   $pdf->Cell(47.5, 7, $percent, 1, 1, 'C');
+               }
+           } else {
+               $pdf->Cell(0, 7, 'No attendance records found.', 1, 1, 'C');
+           }
+           $pdf->Ln(5);
+  
+           // Marks Tables
+           $pdf->SetFont('Arial', 'B', 12);
+           $pdf->Cell(0, 8, 'Exam Results', 0, 1);
+           $exams_res = $conn->query("SELECT DISTINCT e.id, e.name as exam_name, e.max_marks FROM exams e JOIN marks m ON e.id = m.exam_id WHERE m.student_id=$sid ORDER BY e.id");
+           if($exams_res && $exams_res->num_rows > 0) {
+                while($exam = $exams_res->fetch_assoc()) {
+                   $pdf->SetFont('Arial', 'B', 10);
+                   $pdf->Cell(0, 7, $exam['exam_name'], 1, 1, 'L');
+                   $pdf->Cell(130, 7, 'Subject', 1, 0, 'C');
+                   $pdf->Cell(60, 7, 'Marks', 1, 1, 'C');
+                   $pdf->SetFont('Arial', '', 10);
+                   $marks_res = $conn->query("SELECT s.name as subject_name, m.marks_obtained FROM marks m JOIN subjects s ON m.subject_code = s.code WHERE m.student_id=$sid AND m.exam_id={$exam['id']} ORDER BY s.name");
+                   while($mark = $marks_res->fetch_assoc()){
+                      $pdf->Cell(130, 7, $mark['subject_name'], 1, 0);
+                      $pdf->Cell(60, 7, $mark['marks_obtained'] . ' / ' . $exam['max_marks'], 1, 1, 'C');
+                   }
+                }
+           } else {
+               $pdf->SetFont('Arial', '', 10);
+               $pdf->Cell(0, 7, 'No marks found for this student.', 1, 1, 'C');
+           }
+           $pdf->AddPage();
+       }
+   } else {
+       $pdf->Cell(0, 10, 'No students found in the database at the time of archival.', 0, 1);
+   }
+  
+   if (!is_dir(__DIR__ . '/archives')) { mkdir(__DIR__ . '/archives'); }
+   $pdf->Output('F', __DIR__ . '/archives/' . $archive_name . '.pdf');
+  
+    // --- STEP 2: IDENTIFY GRADUATING & FORK CLASSES ---
+    $graduating_class_id = null;
+    $fork_class_ids = [];
+    $promo_map_res = $conn->query("SELECT p.current_class_id, c.sort_order FROM class_promotions p JOIN classes c ON p.current_class_id = c.id WHERE p.next_class_id IS NULL ORDER BY c.sort_order DESC");
+    if ($promo_map_res && $promo_map_res->num_rows > 0) {
+        $graduating_class = $promo_map_res->fetch_assoc();
+        $graduating_class_id = $graduating_class['current_class_id'];
+        while($row = $promo_map_res->fetch_assoc()) {
+            $fork_class_ids[] = (int)$row['current_class_id'];
+        }
+    }
+    
+    if (!empty($fork_class_ids)) {
+        $fork_ids_str = implode(',', $fork_class_ids);
+        $conn->query("UPDATE students SET status = 'awaiting_stream' WHERE class_id IN ($fork_ids_str)");
+    }
+    if ($graduating_class_id) {
+        $conn->query("UPDATE students SET status = 'graduated' WHERE class_id = $graduating_class_id");
+    }
+  
+    // --- STEP 3: PROMOTE ACTIVE STUDENTS (Reverse Order) ---
+    $promo_map_query = "SELECT p.current_class_id, p.next_class_id FROM class_promotions p JOIN classes c ON p.current_class_id = c.id ORDER BY c.sort_order DESC";
+    $promo_map_res = $conn->query($promo_map_query);
+    if ($promo_map_res) {
+        while ($map = $promo_map_res->fetch_assoc()) {
+            if (!is_null($map['next_class_id'])) {
+                $current_id = (int)$map['current_class_id'];
+                $next_id = (int)$map['next_class_id'];
+                $conn->query("UPDATE students SET class_id = $next_id WHERE class_id = $current_id AND status = 'active'");
+            }
+        }
+    }
+  
+    // --- STEP 4: CLEANUP & RESET (THE DEEP CLEAN) ---
+    // Disable FK checks to allow truncation of parent tables
+    $conn->query("SET FOREIGN_KEY_CHECKS = 0");
+  
+    // A. Students Logic (Remove Graduated)
+    $conn->query("DELETE FROM marks WHERE student_id IN (SELECT id FROM students WHERE status = 'graduated')");
+    $conn->query("DELETE FROM attendance WHERE student_id IN (SELECT id FROM students WHERE status = 'graduated')");
+    $conn->query("DELETE FROM students WHERE status = 'graduated'");
+  
+    // B. Academic Data Reset
+    $conn->query("TRUNCATE TABLE attendance"); // Old monthly table
+    $conn->query("TRUNCATE TABLE daily_attendance"); // New daily app table
+    $conn->query("TRUNCATE TABLE marks");
+  
+    // C. Communications & Content Reset
+    $conn->query("TRUNCATE TABLE daily_posts"); // Homework/Classwork (Cascades to post_items)
+    $conn->query("TRUNCATE TABLE events_announcements"); // Notice Board
+    $conn->query("TRUNCATE TABLE events_daily_updates"); // "What's Happening"
+    $conn->query("TRUNCATE TABLE events_upcoming"); // Calendar Events
+    $conn->query("TRUNCATE TABLE exam_publish_status"); // Reset Exam Visibility
+  
+    // Re-enable FK checks
+    $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+  
+    // --- STEP 5: AUTO-INCREMENT ACADEMIC SESSION ---
+    // This updates '2025-2026' to '2026-2027' in the database
+    require_once 'api/session_manager.php';
+    increment_session($conn);
+  
+    setAlert('success', 'Session ended successfully! Archive created, students promoted, and all academic/activity data reset for the new year.');
+    header("Location: admin.php?success=session_ended#endOfSession");
+    exit;
   }
-  if ($graduating_class_id) {
-      $conn->query("UPDATE students SET status = 'graduated' WHERE class_id = $graduating_class_id");
-  }
-
-  // --- STEP 4: PROMOTE ALL REMAINING 'ACTIVE' STUDENTS (Reverse Order) ---
-  $promo_map_query = "SELECT p.current_class_id, p.next_class_id FROM class_promotions p JOIN classes c ON p.current_class_id = c.id ORDER BY c.sort_order DESC";
-  $promo_map_res = $conn->query($promo_map_query);
-  if ($promo_map_res) {
-      while ($map = $promo_map_res->fetch_assoc()) {
-          if (!is_null($map['next_class_id'])) {
-              $current_id = (int)$map['current_class_id'];
-              $next_id = (int)$map['next_class_id'];
-              $conn->query("UPDATE students SET class_id = $next_id WHERE class_id = $current_id AND status = 'active'");
-          }
-      }
-  }
-
-  // --- STEP 5: CLEANUP & RESET ---
-  $conn->query("DELETE FROM marks WHERE student_id IN (SELECT id FROM students WHERE status = 'graduated')");
-  $conn->query("DELETE FROM attendance WHERE student_id IN (SELECT id FROM students WHERE status = 'graduated')");
-  $conn->query("DELETE FROM students WHERE status = 'graduated'");
-
-  $conn->query("TRUNCATE TABLE attendance");
-  $conn->query("TRUNCATE TABLE marks");
-
-  setAlert('success', 'Session ended successfully! Data archived and reset.');
-  header("Location: admin.php?success=session_ended#endOfSession");
-  exit;
-}
 
 // ---- Handle 'assignStreams' action ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action']) && $_POST['action'] === 'assignStreams') {
@@ -2131,6 +2166,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
                             <select name="editAdminLevel" required>
                                 <option value="1" <?= $admin_to_edit['level'] == 1 ? 'selected' : '' ?>>Level 1 (Super Admin)</option>
                                 <option value="2" <?= $admin_to_edit['level'] == 2 ? 'selected' : '' ?>>Level 2 (Admin)</option>
+                                <option value="5" style="background-color: #e6fffa; color: #047857; font-weight:bold;" <?= $admin_to_edit['level'] == 5 ? 'selected' : '' ?>>>Level 5 (Accountant)</option>
                             </select>
                         </p>
                         <p><strong>New Password:</strong> <input type="password" name="editAdminPassword" placeholder="Leave blank to keep unchanged"></p>
@@ -2164,9 +2200,10 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
                 </div>
                 <div class="input-group">
                     <label for="newAdminLevel">Admin Level</label>
-                    <select id="newAdminLevel" name="newAdminLevel">
+                    <select id="newAdminLevel" name="newAdminLevel" required>
                         <option value="1">Level 1 (Super Admin)</option>
-                        <option value="2">Level 2 (Admin)</option>
+                        <option value="2">Level 2 (General Admin)</option>
+                        <option value="5" style="background-color: #e6fffa; color: #047857; font-weight:bold;">Level 5 (Accountant)</option>
                     </select>
                 </div>
                 <div class="input-group">

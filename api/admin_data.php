@@ -130,7 +130,7 @@ if ($action === 'add_student') {
     $cont = $conn->real_escape_string($_POST['contact']);
     $year = !empty($_POST['admission_year']) ? (int)$_POST['admission_year'] : date('Y');
     
-    $img = uploadFile('image') ?? 'GMPSimages/default_student.png';
+    $img = uploadFile('image') ?? 'GMPSimages/default_user.png';
     
     $stmt = $conn->prepare("INSERT INTO students (name, login_id, password_hash, class_id, roll_no, dob, father_name, mother_name, address, contact, admission_year, profile_pic, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')");
     $stmt->bind_param("sssiisssssss", $name, $login, $pass, $class_id, $roll, $dob, $father, $mother, $addr, $cont, $year, $img);
@@ -206,7 +206,7 @@ if ($action === 'add_teacher') {
     $pass = password_hash($_POST['password'], PASSWORD_DEFAULT);
     $contact = $conn->real_escape_string($_POST['contact']);
     $class_id = !empty($_POST['assigned_class_id']) ? (int)$_POST['assigned_class_id'] : null;
-    $img = uploadFile('image') ?? 'GMPSimages/default_teacher.png';
+    $img = uploadFile('image') ?? 'GMPSimages/default_user.png';
     
     $stmt = $conn->prepare("INSERT INTO teachers (name, login_id, password_hash, contact, profile_pic, assigned_class_id) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("sssssi", $name, $login, $pass, $contact, $img, $class_id);
@@ -268,7 +268,7 @@ if ($action === 'add_admin') {
     $pass = password_hash($_POST['password'], PASSWORD_DEFAULT);
     $contact = $conn->real_escape_string($_POST['contact']);
     $level = (int)$_POST['level'];
-    $img = uploadFile('image') ?? 'GMPSimages/default-admin.jpg';
+    $img = uploadFile('image') ?? 'GMPSimages/default_user.png';
     
     $stmt = $conn->prepare("INSERT INTO admins (name, login_id, password_hash, contact, level, profile_pic) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("ssssis", $name, $login, $pass, $contact, $level, $img);
