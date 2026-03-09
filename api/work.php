@@ -29,18 +29,16 @@ $sql = "SELECT dp.post_id, dp.post_date, dp.created_at,
         JOIN teachers t ON dp.teacher_id = t.id
         WHERE dp.class_id = $student_class_id
         ORDER BY dp.post_date DESC, dp.created_at DESC
-        LIMIT 20";
+        LIMIT 30";
 
 $res = $conn->query($sql);
 if ($res) {
     while($post = $res->fetch_assoc()) {
         $pid = $post['post_id'];
         
-        // Determine Role
         $is_classteacher = ($post['assigned_class_id'] == $student_class_id);
-        $post['teacher_role'] = $is_classteacher ? 'Classteacher' : 'Subject Teacher';
+        $post['teacher_role'] = $is_classteacher ? 'Class Teacher' : 'Subject Teacher';
         
-        // If subject teacher, try to find their subject
         if (!$is_classteacher) {
             $sub_q = $conn->query("SELECT s.name FROM teacher_subjects ts JOIN subjects s ON ts.subject_code = s.code WHERE ts.teacher_id = {$post['teacher_id']} LIMIT 1");
             if ($sub = $sub_q->fetch_assoc()) {
@@ -48,34 +46,30 @@ if ($res) {
             }
         }
 
-        // 3. Fetch Items
+        // 3. Fetch Items WITH Subject Name Join
         $items = [];
-        $i_sql = "SELECT item_id, item_type, heading, content FROM post_items WHERE post_id = $pid ORDER BY item_id";
+        $i_sql = "SELECT pi.item_id, pi.item_type, pi.heading, pi.content, s.name as subject_name 
+                  FROM post_items pi 
+                  LEFT JOIN subjects s ON pi.subject_code = s.code 
+                  WHERE pi.post_id = $pid ORDER BY pi.item_id";
         $i_res = $conn->query($i_sql);
         
         while($item = $i_res->fetch_assoc()) {
             $iid = $item['item_id'];
             $item['attachments'] = [];
-            $item['defaulters'] = []; // Array of names
+            $item['defaulters'] = []; 
             
-            // Attachments
             $att_res = $conn->query("SELECT file_path FROM post_attachments WHERE item_id = $iid");
             while($att = $att_res->fetch_assoc()) $item['attachments'][] = $att['file_path'];
 
-            // Defaulters
             if ($item['item_type'] === 'defaulter') {
                 $def_res = $conn->query("SELECT s.name FROM post_defaulters pd JOIN students s ON pd.student_id = s.id WHERE pd.item_id = $iid");
                 while($def = $def_res->fetch_assoc()) $item['defaulters'][] = $def['name'];
             }
 
-            // Override Item Type for Subject Teachers (Force to 'update')
-            if (!$is_classteacher) {
-                // Keep 'defaulter' as is, but change cw/hw to 'update'
-                if ($item['item_type'] !== 'defaulter') {
-                    $item['item_type'] = 'update';
-                }
+            if (!$is_classteacher && $item['item_type'] !== 'defaulter') {
+                $item['item_type'] = 'update';
             }
-
             $items[] = $item;
         }
 

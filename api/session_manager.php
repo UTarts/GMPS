@@ -28,23 +28,4 @@ function increment_session($conn) {
     return false;
 }
 
-// --- ONE-TIME SECURITY TOOL ---
-if (isset($_GET['setup_auth']) && $_GET['setup_auth'] == 1) {
-    $password = 'GMPS2018_EndOfSession';
-    $hash = password_hash($password, PASSWORD_DEFAULT);
-    
-    // Update Database with Secure Hash
-    $stmt = $conn->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = 'master_password_hash'");
-    $stmt->bind_param("s", $hash);
-    
-    if ($stmt->execute()) {
-        echo "<div style='font-family:sans-serif; padding:20px; background:#d4edda; color:#155724; border:1px solid #c3e6cb; border-radius:5px;'>";
-        echo "<strong>Success!</strong> Master Password set to: <code>$password</code><br>";
-        echo "Session Table is ready.";
-        echo "</div>";
-    } else {
-        echo "Error updating password: " . $conn->error;
-    }
-    exit;
-}
 ?>

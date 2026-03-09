@@ -331,18 +331,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 
       // --- Update Marks ---
       if (isset($_POST['marks'])) {
-          foreach ($_POST['marks'] as $exam_id => $subjects) {
-              foreach ($subjects as $subject_code => $obtained) {
-                  if ($subject_code === 'new_subject_code' || $subject_code === 'new_subject_marks') continue;
-                  
-                  $exam_id_int = (int)$exam_id;
-                  $obtained_marks = is_numeric($obtained) ? (int)$obtained : null;
+        require_once 'api/session_manager.php';
+        $current_sess = get_current_session($conn);
+        
+        foreach ($_POST['marks'] as $exam_id => $subjects) {
+            foreach ($subjects as $subject_code => $obtained) {
+                if ($subject_code === 'new_subject_code' || $subject_code === 'new_subject_marks') continue;
+                
+                $exam_id_int = (int)$exam_id;
+                $obtained_marks = is_numeric($obtained) ? (int)$obtained : null;
 
-                  if ($obtained_marks !== null) {
-                      $stmt = $conn->prepare("INSERT INTO marks (student_id, exam_id, subject_code, marks_obtained) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE marks_obtained = ?");
-                      $stmt->bind_param("iisii", $sid, $exam_id_int, $subject_code, $obtained_marks, $obtained_marks);
-                      $stmt->execute();
-                  } else {
+                if ($obtained_marks !== null) {
+                    $stmt = $conn->prepare("INSERT INTO marks (student_id, exam_id, subject_code, marks_obtained, session) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE marks_obtained = ?");
+                    $stmt->bind_param("iisiis", $sid, $exam_id_int, $subject_code, $obtained_marks, $current_sess, $obtained_marks);
+                    $stmt->execute();
+                } else {
                       $stmt = $conn->prepare("DELETE FROM marks WHERE student_id=? AND exam_id=? AND subject_code=?");
                       $stmt->bind_param("iis", $sid, $exam_id_int, $subject_code);
                       $stmt->execute();
@@ -432,44 +435,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
       exit;
   }
 
-  // ---- subjectManager actions ----
-  if ($action === 'addSubject') {
-    $code = strtoupper($_POST['newSubjectCode']); 
-    $name = $_POST['newSubjectName'];
-    if (!empty($code) && !empty($name)) {
-        $stmt = $conn->prepare("INSERT INTO subjects (code, name) VALUES (?, ?)");
-        $stmt->bind_param("ss", $code, $name);
-        $stmt->execute();
-        setAlert('success', 'Subject added.');
-    }
-    header("Location: admin.php#manageSubjects");
-    exit;
-  }
+// --- SMART SUBJECT HANDLER (ADD / UPDATE) ---
+if (isset($_POST['action']) && $_POST['action'] === 'saveSubject') {
+    $original_code = trim($_POST['originalSubjectCode']);
+    $new_code = trim($_POST['newSubjectCode']);
+    $name = trim($_POST['newSubjectName']);
+    $mapped_classes = $_POST['mapped_classes'] ?? [];
 
-  if ($action === 'updateSubject') {
-    $code = $_POST['subjectCodeToUpdate'];
-    $name = $_POST['editSubjectName'];
-    if (!empty($code) && !empty($name)) {
-        $stmt = $conn->prepare("UPDATE subjects SET name = ? WHERE code = ?");
-        $stmt->bind_param("ss", $name, $code);
+    if (!empty($original_code) && $original_code !== $new_code) {
+        // 1. Temporarily disable foreign key checks to allow primary key updates
+        $conn->query("SET FOREIGN_KEY_CHECKS = 0");
+        
+        // 2. Update the main subject code and name
+        $stmt = $conn->prepare("UPDATE subjects SET code = ?, name = ? WHERE code = ?");
+        $stmt->bind_param("sss", $new_code, $name, $original_code);
         $stmt->execute();
-        setAlert('success', 'Subject updated.');
+        
+        // 3. Manually cascade the new code to all connected tables!
+        $conn->query("UPDATE class_subjects SET subject_code = '$new_code' WHERE subject_code = '$original_code'");
+        $conn->query("UPDATE teacher_subjects SET subject_code = '$new_code' WHERE subject_code = '$original_code'");
+        $conn->query("UPDATE timetables SET subject_code = '$new_code' WHERE subject_code = '$original_code'");
+        $conn->query("UPDATE marks SET subject_code = '$new_code' WHERE subject_code = '$original_code'");
+        
+        // 4. Re-enable security checks
+        $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+    } else {
+        // Normal Insert or Name Update (Code didn't change)
+        $stmt = $conn->prepare("INSERT INTO subjects (code, name) VALUES (?, ?) ON DUPLICATE KEY UPDATE name = ?");
+        $stmt->bind_param("sss", $new_code, $name, $name);
+        $stmt->execute();
     }
-    header("Location: admin.php#manageSubjects");
-    exit;
-  }
 
-  if ($action === 'deleteSubject') {
-    $code = $_POST['subjectCodeToDelete'];
-    if (!empty($code)) {
-        $stmt = $conn->prepare("DELETE FROM subjects WHERE code = ?");
-        $stmt->bind_param("s", $code);
-        $stmt->execute();
-        setAlert('success', 'Subject deleted.');
+    // Clear old mappings for this subject
+    $conn->query("DELETE FROM class_subjects WHERE subject_code = '$new_code'");
+
+    // Insert newly selected class mappings
+    if (!empty($mapped_classes)) {
+        $map_stmt = $conn->prepare("INSERT INTO class_subjects (class_id, subject_code) VALUES (?, ?)");
+        foreach ($mapped_classes as $cid) {
+            $map_stmt->bind_param("is", $cid, $new_code);
+            $map_stmt->execute();
+        }
     }
-    header("Location: admin.php#manageSubjects");
-    exit;
-  }
+    $success_msg = "Subject saved and mapped successfully.";
+}
+
+// --- DELETE SUBJECT HANDLER ---
+if (isset($_POST['action']) && $_POST['action'] === 'deleteSubject') {
+    $del_code = $conn->real_escape_string($_POST['subjectCodeToDelete']);
+    
+    // Remove from mapping table first
+    $conn->query("DELETE FROM class_subjects WHERE subject_code = '$del_code'");
+    
+    // Unlink from teachers and timetables safely
+    $conn->query("UPDATE teachers SET subject_code = NULL WHERE subject_code = '$del_code'");
+    $conn->query("UPDATE timetables SET subject_code = NULL WHERE subject_code = '$del_code'");
+    $conn->query("DELETE FROM teacher_subjects WHERE subject_code = '$del_code'");
+    
+    // Delete the subject
+    $conn->query("DELETE FROM subjects WHERE code = '$del_code'");
+    
+    $success_msg = "Subject deleted successfully.";
+}
 }
 
 // ---- Handle 'endOfSession' action ----
@@ -515,12 +542,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action']) && $_POST[
            $pdf->SetFont('Arial', '', 12);
            
            $image_path = $student['profile_pic'];
-           if (empty($image_path) || !file_exists(__DIR__ . '/' . $image_path)) {
+           
+           // FIX: FPDF crashes on .webp. This forces unsupported formats to use the default image.
+           $allowed_exts = ['jpg', 'jpeg', 'png', 'gif'];
+           $ext = strtolower(pathinfo($image_path, PATHINFO_EXTENSION));
+           
+           if (empty($image_path) || !file_exists(__DIR__ . '/' . $image_path) || !in_array($ext, $allowed_exts)) {
                $image_path = 'GMPSimages/default_student.png'; 
            }
+           
            $pdf->Image($image_path, 160, $pdf->GetY() + 12, 30, 30);
            
+           // Added Aadhar No to the PDF output
            $pdf->Cell(140, 8, 'Class: ' . $student['class_name'], 'L', 1);
+           $pdf->Cell(140, 8, "Aadhar No: " . ($student['aadhar_no'] ?? 'N/A'), 'L', 1);
            $pdf->Cell(140, 8, "Father's Name: " . $student['father_name'], 'L', 1);
            $pdf->Cell(140, 8, "Mother's Name: " . $student['mother_name'], 'L', 1);
            $pdf->Cell(140, 8, 'Contact: ' . $student['contact'], 'L', 1);
@@ -615,29 +650,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action']) && $_POST[
         }
     }
   
-    // --- STEP 4: CLEANUP & RESET (THE DEEP CLEAN) ---
-    // Disable FK checks to allow truncation of parent tables
-    $conn->query("SET FOREIGN_KEY_CHECKS = 0");
-  
-    // A. Students Logic (Remove Graduated)
-    $conn->query("DELETE FROM marks WHERE student_id IN (SELECT id FROM students WHERE status = 'graduated')");
-    $conn->query("DELETE FROM attendance WHERE student_id IN (SELECT id FROM students WHERE status = 'graduated')");
-    $conn->query("DELETE FROM students WHERE status = 'graduated'");
-  
-    // B. Academic Data Reset
-    $conn->query("TRUNCATE TABLE attendance"); // Old monthly table
-    $conn->query("TRUNCATE TABLE daily_attendance"); // New daily app table
-    $conn->query("TRUNCATE TABLE marks");
-  
-    // C. Communications & Content Reset
-    $conn->query("TRUNCATE TABLE daily_posts"); // Homework/Classwork (Cascades to post_items)
-    $conn->query("TRUNCATE TABLE events_announcements"); // Notice Board
-    $conn->query("TRUNCATE TABLE events_daily_updates"); // "What's Happening"
-    $conn->query("TRUNCATE TABLE events_upcoming"); // Calendar Events
-    $conn->query("TRUNCATE TABLE exam_publish_status"); // Reset Exam Visibility
-  
-    // Re-enable FK checks
-    $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+    // --- STEP 4: SAVE HISTORY & LOCK PAST DATA (NON-DESTRUCTIVE) ---
+    $current_sess = get_current_session($conn);
+    
+    // Save current active students to the history table before the session increments
+    $conn->query("INSERT IGNORE INTO student_session_history (student_id, class_id, roll_no, session, is_locked) SELECT id, class_id, roll_no, '$current_sess', 1 FROM students WHERE status != 'graduated'");
   
     // --- STEP 5: AUTO-INCREMENT ACADEMIC SESSION ---
     // This updates '2025-2026' to '2026-2027' in the database
@@ -1548,6 +1565,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
                         <p><strong>Mother's Name:</strong> <input type="text" name="editMotherName" value="<?= htmlspecialchars($student_to_edit['mother_name']) ?>"></p>
                         <p><strong>Address:</strong> <textarea name="editAddress" rows="2"><?= htmlspecialchars($student_to_edit['address']) ?></textarea></p>
                         <p><strong>Contact:</strong> <input type="text" name="editContact" value="<?= htmlspecialchars($student_to_edit['contact']) ?>"></p>
+                        <p><strong>Aadhar No:</strong> <input type="text" name="editAadhar" value="<?= htmlspecialchars($student_to_edit['aadhar_no'] ?? '') ?>" maxlength="14"></p>
                         <p><strong>Set New Password:</strong> <input type="password" name="editStudentPassword" placeholder="Leave blank to keep unchanged"></p>
                         <p><strong>Class:</strong> 
                             <select name="editStudentClass">
@@ -1690,6 +1708,10 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
                 <div class="input-group">
                   <label for="newContact">Contact</label>
                   <input type="text" id="newContact" name="newContact"/>
+                </div>
+                <div className="input-group">
+                    <label for="newAadhar">Aadhar Number</label>
+                    <input type="text" id="newAadhar" name="newAadhar" maxlength="14"/>
                 </div>
                 <div class="input-group">
                   <label for="newStudentClass">Class</label>
@@ -2218,35 +2240,48 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
       <?php endif; ?>
 
       <?php if (isset($_SESSION['adminUser']['level']) && $_SESSION['adminUser']['level'] == 1): ?>
-      <section id="manageSubjects">
-          <h2>Manage Subjects</h2>
+        <section id="manageSubjects">
+          <h2>Manage Subjects & Curriculum Mapping</h2>
 
           <div class="content-editor">
-              <h3>Subject List</h3>
+              <h3>Mapped Subject List</h3>
               <div class="table-container">
                   <table>
                       <thead>
                           <tr>
-                              <th>Subject Code (ID)</th>
+                              <th>Subject Code</th>
                               <th>Subject Name</th>
+                              <th>Mapped Classes</th>
                               <th>Actions</th>
                           </tr>
                       </thead>
                       <tbody>
                           <?php
-                          $subjects_res = $conn->query("SELECT code, name FROM subjects ORDER BY name");
+                          // Fetch subjects and group their mapped classes, including IDs for the edit function
+                          $subjects_res = $conn->query("
+                              SELECT s.code, s.name, 
+                                     GROUP_CONCAT(c.id) as mapped_class_ids, 
+                                     GROUP_CONCAT(c.name ORDER BY c.sort_order ASC SEPARATOR ', ') as mapped_to 
+                              FROM subjects s 
+                              LEFT JOIN class_subjects cs ON s.code = cs.subject_code 
+                              LEFT JOIN classes c ON cs.class_id = c.id 
+                              GROUP BY s.code ORDER BY s.name ASC
+                          ");
                           while ($subject = $subjects_res->fetch_assoc()):
                           ?>
                           <tr>
-                              <td><?= htmlspecialchars($subject['code']) ?></td>
-                              <td><?= htmlspecialchars($subject['name']) ?></td>
+                              <td style="font-weight: bold; color: #4f46e5;"><?= htmlspecialchars($subject['code']) ?></td>
+                              <td style="font-weight: bold;"><?= htmlspecialchars($subject['name']) ?></td>
+                              <td style="font-size: 13px; color: #555; line-height: 1.5;">
+                                  <?= $subject['mapped_to'] ? htmlspecialchars($subject['mapped_to']) : '<span style="color:red; font-weight:bold;">Unassigned</span>' ?>
+                              </td>
                               <td>
-                                  <button onclick="editSubject('<?= htmlspecialchars($subject['code']) ?>', '<?= htmlspecialchars($subject['name']) ?>')">Edit</button>
+                                  <button type="button" onclick="editSubject('<?= htmlspecialchars($subject['code']) ?>', '<?= htmlspecialchars(addslashes($subject['name'])) ?>', '<?= $subject['mapped_class_ids'] ?>')">Edit</button>
                                   
                                   <form method="post" style="display:inline;" id="delSubForm_<?= $subject['code'] ?>">
                                       <input type="hidden" name="action" value="deleteSubject">
                                       <input type="hidden" name="subjectCodeToDelete" value="<?= htmlspecialchars($subject['code']) ?>">
-                                      <button type="button" onclick="confirmDelete(event, 'delSubForm_<?= $subject['code'] ?>')">Delete</button>
+                                      <button type="button" style="background-color: #ef4444;" onclick="confirmDelete(event, 'delSubForm_<?= $subject['code'] ?>')">Delete</button>
                                   </form>
                               </td>
                           </tr>
@@ -2258,21 +2293,40 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
           
           <div class="content-editor" style="margin-top: 2rem;">
               <form id="subjectForm" method="post">
-                  <h3 id="subjectFormTitle">Add New Subject</h3>
-                  <input type="hidden" id="subjectAction" name="action" value="addSubject">
-                  <input type="hidden" id="subjectCodeToUpdate" name="subjectCodeToUpdate" value="">
+                  <h3 id="subjectFormTitle">Add New Subject & Map to Classes</h3>
+                  <input type="hidden" id="subjectAction" name="action" value="saveSubject">
+                  <input type="hidden" id="originalSubjectCode" name="originalSubjectCode" value="">
                   
-                  <div class="input-group">
-                      <label for="newSubjectCode">Subject Code (e.g., MAT, SCI, ENG)</label>
-                      <input type="text" id="newSubjectCode" name="newSubjectCode" required>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                      <div class="input-group">
+                          <label for="newSubjectCode">Subject Code (e.g., ENG_LIT)</label>
+                          <input type="text" id="newSubjectCode" name="newSubjectCode" required style="text-transform: uppercase;">
+                      </div>
+                      <div class="input-group">
+                          <label for="newSubjectName">Subject Full Name</label>
+                          <input type="text" id="newSubjectName" name="newSubjectName" required>
+                      </div>
                   </div>
-                  <div class="input-group">
-                      <label for="newSubjectName">Subject Name (e.g., Mathematics)</label>
-                      <input type="text" id="newSubjectName" name="newSubjectName" required>
+
+                  <div class="input-group" style="margin-top: 15px;">
+                      <label style="margin-bottom: 10px; display: block; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px;">Map to Classes:</label>
+                      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; max-height: 250px; overflow-y: auto;">
+                          <?php
+                          $classes_list = $conn->query("SELECT id, name FROM classes ORDER BY sort_order ASC");
+                          while($cl = $classes_list->fetch_assoc()):
+                          ?>
+                          <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: normal; cursor: pointer; background: white; padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc;">
+                              <input type="checkbox" name="mapped_classes[]" value="<?= $cl['id'] ?>" class="subject-class-cb">
+                              <?= htmlspecialchars($cl['name']) ?>
+                          </label>
+                          <?php endwhile; ?>
+                      </div>
                   </div>
                   
-                  <button type="submit" id="subjectSubmitButton">Add Subject</button>
-                  <button type="button" id="cancelEditButton" onclick="resetSubjectForm()" style="display:none;">Cancel Edit</button>
+                  <div style="margin-top: 20px;">
+                      <button type="submit" id="subjectSubmitButton">Save Subject & Mappings</button>
+                      <button type="button" id="cancelEditButton" onclick="resetSubjectForm()" style="display:none; background-color: #6b7280; margin-left: 10px;">Cancel Edit</button>
+                  </div>
               </form>
         </div>
       </section>
@@ -2433,7 +2487,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
                     <label><input type="checkbox" id="confirm4" required> I confirm I will download the archive before proceeding, as it's the only record.</label>
                 </div>
                 <div class="input-group">
-                    <label><input type="checkbox" id="confirm5" required> I understand that all attendance and marks records for the past year will be PERMANENTLY DELETED.</label>
+                    <label><input type="checkbox" id="confirm5" required> I understand that all current data will be safely locked as history, and a fresh view will start for the new session.</label>
                 </div>
 
                 <button type="submit" id="finalSubmitBtn" style="background-color: #dc3545; width: 100%; padding: 1rem; font-size: 1.2rem;">INITIATE END OF SESSION</button>
@@ -2549,34 +2603,43 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
     if(hamburgerBtn) hamburgerBtn.addEventListener("click", toggleSidebar);
     if(headerMenuBtn) headerMenuBtn.addEventListener("click", toggleSidebar);
 
-    function editSubject(code, name) {
-        document.getElementById('subjectFormTitle').innerText = 'Edit Subject';
-        document.getElementById('subjectAction').value = 'updateSubject';
-        document.getElementById('subjectCodeToUpdate').value = code;
-        
-        const codeInput = document.getElementById('newSubjectCode');
-        codeInput.value = code;
-        codeInput.readOnly = true; 
-        codeInput.style.backgroundColor = '#e9ecef';
-
-        document.getElementById('newSubjectName').value = name;
-        document.getElementById('subjectSubmitButton').innerText = 'Save Changes';
-        document.getElementById('cancelEditButton').style.display = 'inline-block';
-        document.getElementById('subjectForm').scrollIntoView();
+    function editSubject(code, name, mappedClassIds) {
+    document.getElementById('subjectFormTitle').innerText = 'Edit Subject Mapping';
+    document.getElementById('subjectSubmitButton').innerText = 'Update Subject';
+    document.getElementById('cancelEditButton').style.display = 'inline-block';
+    
+    document.getElementById('originalSubjectCode').value = code;
+    document.getElementById('newSubjectCode').value = code;
+    document.getElementById('newSubjectName').value = name;
+    
+    // Clear all checkboxes first
+    document.querySelectorAll('.subject-class-cb').forEach(cb => cb.checked = false);
+    
+    // Check the boxes for the currently mapped classes
+    if (mappedClassIds) {
+        const ids = mappedClassIds.split(',');
+        ids.forEach(id => {
+            const checkbox = document.querySelector(`.subject-class-cb[value="${id}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
     }
+    
+    // Scroll to the form
+    document.getElementById('subjectForm').scrollIntoView({ behavior: 'smooth' });
+}
 
-    function resetSubjectForm() {
-        document.getElementById('subjectFormTitle').innerText = 'Add New Subject';
-        document.getElementById('subjectAction').value = 'addSubject';
-        document.getElementById('subjectForm').reset();
-        
-        const codeInput = document.getElementById('newSubjectCode');
-        codeInput.readOnly = false;
-        codeInput.style.backgroundColor = '#fff';
-
-        document.getElementById('subjectSubmitButton').innerText = 'Add Subject';
-        document.getElementById('cancelEditButton').style.display = 'none';
-    }
+function resetSubjectForm() {
+    document.getElementById('subjectFormTitle').innerText = 'Add New Subject & Map to Classes';
+    document.getElementById('subjectSubmitButton').innerText = 'Save Subject & Mappings';
+    document.getElementById('cancelEditButton').style.display = 'none';
+    
+    document.getElementById('originalSubjectCode').value = '';
+    document.getElementById('newSubjectCode').value = '';
+    document.getElementById('newSubjectName').value = '';
+    
+    // Clear all checkboxes
+    document.querySelectorAll('.subject-class-cb').forEach(cb => cb.checked = false);
+}
 
     function addEventRow(containerId, prefix, hasTitle, hasDate = false) {
         const container = document.getElementById(containerId);

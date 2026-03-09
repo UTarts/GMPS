@@ -18,6 +18,15 @@ if ($action === 'fetch_class') {
     $class_id = (int)$input['class_id'];
     $date = $input['date'] ?? date('Y-m-d');
 
+    // --- SMART CALENDAR CHECK ---
+    $holiday_name = null;
+    $is_holiday = false;
+    $cal_sql = "SELECT title FROM academic_calendar WHERE type = 'holiday' AND ('$date' BETWEEN date_start AND COALESCE(date_end, date_start)) LIMIT 1";
+    $cal_res = $conn->query($cal_sql);
+    if ($cal_res && $cal_res->num_rows > 0) {
+        $is_holiday = true;
+        $holiday_name = $cal_res->fetch_assoc()['title'];
+    }
     // Get students + their existing status for this date
     // FIXED: Added roll_no and ordered by it
     $sql = "
@@ -39,7 +48,15 @@ if ($action === 'fetch_class') {
     $stats = ['present'=>0, 'absent'=>0, 'total'=>count($students)];
     while($row = $stats_res->fetch_assoc()) $stats[$row['status']] = (int)$row['count'];
 
-    echo json_encode(['status'=>'success', 'data'=>$students, 'stats'=>$stats]);
+    echo json_encode([
+        'status' => 'success', 
+        'data' => $students, 
+        'stats' => $stats,
+        'calendar_info' => [
+            'is_holiday' => $is_holiday,
+            'holiday_name' => $holiday_name
+        ]
+    ]);
     exit;
 }
 

@@ -1,13 +1,13 @@
 <?php
-session_start();
-$servername = "localhost";
-$dbUsername = "root";    
-$dbPassword = "";       
-$dbName     = "gmps_db";
-// $servername = "localhost"; 
-// $dbUsername = "u355175815_gmps"; 
-// $dbPassword = "Ut@860302"; 
-// $dbName     = "u355175815_gmps_db"; 
+@session_start();
+// $servername = "localhost";
+// $dbUsername = "root";    
+// $dbPassword = "";       
+// $dbName     = "gmps_db";
+$servername = "localhost"; 
+$dbUsername = "u355175815_gmps"; 
+$dbPassword = "Ut@860302"; 
+$dbName     = "u355175815_gmps_db"; 
 
 $conn = new mysqli($servername, $dbUsername, $dbPassword, $dbName);
 

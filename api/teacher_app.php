@@ -35,183 +35,100 @@ if ($action === 'fetch_dashboard') {
     exit;
 }
 
-// --- 2. CREATE POST (Robust Fix) ---
-if ($action === 'create_post') {
-    $post_date = $_POST['post_date'];
-    $type = $_POST['post_type']; // 'daily' or 'general'
-    
-    // Determine Targets
-    $class_ids = [];
-    $raw_targets = $_POST['target_classes'] ?? '';
+// ==================================================================
+// PHASE 1.5: THE TIMELINE HISTORY API
+// ==================================================================
 
-    if ($type === 'general') {
-        // FIX: Handle both JSON "all" and raw string "all" safely
-        if ($raw_targets === 'all' || $raw_targets === '"all"') {
-            $c_res = $conn->query("SELECT id FROM classes");
-            while($r=$c_res->fetch_assoc()) $class_ids[] = $r['id'];
-        } else {
-            // Try decoding as JSON array
-            $decoded = json_decode($raw_targets, true);
-            if (is_array($decoded)) {
-                $class_ids = $decoded;
-            } elseif ($decoded === 'all') {
-                // Handle case where json_decode returns string 'all'
-                $c_res = $conn->query("SELECT id FROM classes");
-                while($r=$c_res->fetch_assoc()) $class_ids[] = $r['id'];
-            }
-        }
-    } else {
-        // Daily post logic (only own class)
-        $t_res = $conn->query("SELECT assigned_class_id FROM teachers WHERE id = $tid");
-        $row = $t_res->fetch_assoc();
-        if($row['assigned_class_id']) $class_ids[] = $row['assigned_class_id'];
-    }
+if ($action === 'fetch_work_history') {
+    $tid = (int)$_POST['teacher_id'];
+    $history = [];
 
-    // Remove duplicates just in case
-    $class_ids = array_unique($class_ids);
-
-    if (empty($class_ids)) { echo json_encode(['status'=>'error', 'message'=>'No target class']); exit; }
-
-    // Get Teacher Name ONCE for Notification
-    $t_name_res = $conn->query("SELECT name FROM teachers WHERE id=$tid");
-    $teacher_name = $t_name_res->fetch_assoc()['name'];
-
-    // Loop Targets
-    foreach ($class_ids as $cid) {
-        $cid = (int)$cid; // Ensure integer
-
-        // FIX: Explicitly UPDATE created_at to ensure insert_id or logic triggers correctly
-        $stmt = $conn->prepare("INSERT INTO daily_posts (teacher_id, class_id, post_date, created_at) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE created_at=NOW()");
-        $stmt->bind_param("iis", $tid, $cid, $post_date);
-        $stmt->execute();
+    // 1. Fetch Daily Posts (CW, HW, Defaulters)
+    $q1 = $conn->query("
+        SELECT dp.post_date as date, pi.item_id as id, pi.item_type as type, pi.heading, pi.content, pi.subject_code, c.name as class_name, dp.created_at
+        FROM daily_posts dp
+        JOIN post_items pi ON dp.post_id = pi.post_id
+        LEFT JOIN classes c ON dp.class_id = c.id
+        WHERE dp.teacher_id = $tid
+    ");
+    while($r = $q1->fetch_assoc()) {
+        $date = $r['date'];
+        if(!isset($history[$date])) $history[$date] = [];
         
-        // FIX: Robust post_id retrieval. If insert_id is 0 (row existed but timestamp collision), fetch it manually.
-        $post_id = $stmt->insert_id;
-        if (!$post_id) {
-            $fetch_stmt = $conn->prepare("SELECT post_id FROM daily_posts WHERE teacher_id=? AND class_id=? AND post_date=?");
-            $fetch_stmt->bind_param("iis", $tid, $cid, $post_date);
-            $fetch_stmt->execute();
-            $res = $fetch_stmt->get_result();
-            if ($row = $res->fetch_assoc()) {
-                $post_id = $row['post_id'];
-            }
+        $files = [];
+        $f_res = $conn->query("SELECT file_path FROM post_attachments WHERE item_id = " . $r['id']);
+        while($f = $f_res->fetch_assoc()) $files[] = $f['file_path'];
+        
+        $students = [];
+        if($r['type'] === 'defaulter') {
+            $s_res = $conn->query("SELECT s.name, s.roll_no FROM post_defaulters pd JOIN students s ON pd.student_id = s.id WHERE pd.item_id = " . $r['id']);
+            while($s = $s_res->fetch_assoc()) $students[] = $s['name'] . ' (Roll: ' . $s['roll_no'] . ')';
         }
 
-        if (!$post_id) continue; 
-
-        $saveItemLogic = function($i_type, $heading, $content, $file_key, $row_index, $defaulters_json) use ($conn, $notifier, $cid, $teacher_name, $post_id) {
-            if(empty($heading)) return;
-            
-            $stmt_i = $conn->prepare("INSERT INTO post_items (post_id, item_type, heading, content) VALUES (?, ?, ?, ?)");
-            $stmt_i->bind_param("isss", $post_id, $i_type, $heading, $content);
-            $stmt_i->execute();
-            $item_id = $stmt_i->insert_id;
-
-            // Handle Files
-            if (isset($_FILES[$file_key]['name'][$row_index])) {
-                $file_array = $_FILES[$file_key];
-                $count = count($file_array['name'][$row_index]);
-                for($i=0; $i<$count; $i++) {
-                    if ($file_array['error'][$row_index][$i] === UPLOAD_ERR_OK) {
-                        $ext = pathinfo($file_array['name'][$row_index][$i], PATHINFO_EXTENSION);
-                        $new_name = time() . '_' . rand(1000,9999) . '.' . $ext;
-                        $target = __DIR__ . '/../GMPSimages/' . $new_name;
-                        if(move_uploaded_file($file_array['tmp_name'][$row_index][$i], $target)) {
-                            $db_path = 'GMPSimages/' . $new_name;
-                            $conn->query("INSERT INTO post_attachments (item_id, file_path, original_name) VALUES ($item_id, '$db_path', 'File')");
-                        }
-                    }
-                }
-            }
-
-            // Save Defaulters
-            if ($i_type === 'defaulter' && !empty($defaulters_json)) {
-                $ids = json_decode($defaulters_json, true);
-                if(is_array($ids)) foreach($ids as $sid) $conn->query("INSERT INTO post_defaulters (item_id, student_id) VALUES ($item_id, ".(int)$sid.")");
-            }
-
-            // --- NOTIFICATION TRIGGER ---
-            if ($i_type === 'homework') {
-                $notifier->sendToClass($cid, "📢 Homework: $heading", "Posted by $teacher_name. Tap to view details.");
-            } elseif ($i_type === 'classwork') {
-                $notifier->sendToClass($cid, "📝 Classwork: $heading", "New classwork uploaded.");
-            } elseif ($i_type === 'update') {
-                // Truncate content for notification
-                $short_content = (mb_strlen($content) > 50) ? mb_substr($content, 0, 50) . "..." : $content;
-                $notifier->sendToClass($cid, "🔔 Teacher Update", "$heading: $short_content");
-            }
-        };
-
-        if(isset($_POST['cw_heading'])) foreach($_POST['cw_heading'] as $k => $h) $saveItemLogic('classwork', $h, $_POST['cw_content'][$k]??'', 'cw_files', $k, null);
-        if(isset($_POST['hw_heading'])) foreach($_POST['hw_heading'] as $k => $h) $saveItemLogic('homework', $h, $_POST['hw_content'][$k]??'', 'hw_files', $k, null);
-        if(isset($_POST['def_heading'])) foreach($_POST['def_heading'] as $k => $h) $saveItemLogic('defaulter', $h, '', 'none', $k, $_POST['def_students'][$k]??'[]');
-        if(isset($_POST['gen_heading'])) foreach($_POST['gen_heading'] as $k => $h) $saveItemLogic('update', $h, $_POST['gen_content'][$k]??'', 'gen_files', $k, null);
+        $history[$date][] = [
+            'id' => 'dp_' . $r['id'],
+            'type' => $r['type'],
+            'heading' => $r['heading'],
+            'content' => $r['content'],
+            'subject' => $r['subject_code'],
+            'class_name' => $r['class_name'],
+            'time' => date('h:i A', strtotime($r['created_at'])),
+            'timestamp' => strtotime($r['created_at']),
+            'files' => $files,
+            'defaulters' => $students
+        ];
     }
-    echo json_encode(['status'=>'success']);
+
+    // 2. Fetch General Notices
+    $q2 = $conn->query("SELECT id, title, content, date, image_url, created_at FROM events_announcements WHERE teacher_id = $tid");
+    while($r = $q2->fetch_assoc()) {
+        $date = $r['date'];
+        if(!isset($history[$date])) $history[$date] = [];
+        
+        $files = [];
+        if(!empty($r['image_url'])) $files[] = $r['image_url'];
+
+        $history[$date][] = [
+            'id' => 'gen_' . $r['id'],
+            'type' => 'general',
+            'heading' => $r['title'],
+            'content' => $r['content'],
+            'subject' => null,
+            'class_name' => 'All Assigned Classes',
+            'time' => date('h:i A', strtotime($r['created_at'])),
+            'timestamp' => strtotime($r['created_at']),
+            'files' => $files,
+            'defaulters' => []
+        ];
+    }
+
+    // Sort items inside each date (Newest first)
+    foreach($history as $date => &$items) {
+        usort($items, function($a, $b) { return $b['timestamp'] - $a['timestamp']; });
+    }
+    krsort($history); // Sort dates descending
+
+    echo json_encode(['status' => 'success', 'history' => $history]);
     exit;
 }
 
-/// --- 3. FETCH RECENT POSTS (With Items) ---
-if ($action === 'fetch_recent_posts') {
-    // 1. Get Posts
-    $raw = $conn->query("SELECT dp.post_id, dp.class_id, dp.post_date, dp.created_at, c.name as class_name 
-                         FROM daily_posts dp LEFT JOIN classes c ON dp.class_id = c.id 
-                         WHERE dp.teacher_id = $tid ORDER BY dp.created_at DESC LIMIT 50");
-    
-    $posts = [];
-    while($r = $raw->fetch_assoc()) {
-        $key = $r['created_at']; 
-        if(!isset($posts[$key])) {
-            $posts[$key] = [
-                'date' => $r['post_date'],
-                'created_at' => $r['created_at'],
-                'classes' => [],
-                'post_ids' => [],
-                'items' => [] 
-            ];
-        }
-        $posts[$key]['classes'][] = $r['class_id'] == 0 ? "All Classes" : $r['class_name'];
-        $posts[$key]['post_ids'][] = $r['post_id'];
+if ($action === 'delete_history_item') {
+    $id_string = $_POST['item_id']; // e.g. "dp_15" or "gen_8"
+    $tid = (int)$_POST['teacher_id'];
+    list($prefix, $id) = explode('_', $id_string);
+    $id = (int)$id;
+
+    if ($prefix === 'dp') {
+        $check = $conn->query("SELECT pi.item_id FROM post_items pi JOIN daily_posts dp ON pi.post_id = dp.post_id WHERE pi.item_id = $id AND dp.teacher_id = $tid");
+        if($check->num_rows > 0) $conn->query("DELETE FROM post_items WHERE item_id = $id");
+    } elseif ($prefix === 'gen') {
+        $conn->query("DELETE FROM events_announcements WHERE id = $id AND teacher_id = $tid");
     }
 
-    // 2. Fetch Items for the FIRST post_id in the batch (since identical)
-    foreach($posts as $k => &$p) {
-        $pid = $p['post_ids'][0];
-        $i_res = $conn->query("SELECT item_id, item_type, heading, content FROM post_items WHERE post_id = $pid");
-        while($it = $i_res->fetch_assoc()) {
-            // Fetch attachments
-            $att_res = $conn->query("SELECT file_path FROM post_attachments WHERE item_id = " . $it['item_id']);
-            $it['files'] = [];
-            while($f = $att_res->fetch_assoc()) $it['files'][] = $f['file_path'];
-            
-            $p['items'][] = $it;
-        }
-    }
-    
-    echo json_encode(['status'=>'success', 'posts'=>array_values($posts)]);
+    echo json_encode(['status' => 'success']);
     exit;
 }
 
-// --- 4. DELETE ACTIONS ---
-if ($action === 'delete_batch') {
-    $time = $conn->real_escape_string($_POST['batch_time']);
-    $conn->query("DELETE FROM daily_posts WHERE teacher_id = $tid AND created_at = '$time'");
-    echo json_encode(['status'=>'success']);
-    exit;
-}
-
-if ($action === 'delete_item') {
-    $iid = (int)$_POST['item_id'];
-    // Security check: join to ensure teacher owns this item
-    $check = $conn->query("SELECT pi.item_id FROM post_items pi JOIN daily_posts dp ON pi.post_id = dp.post_id WHERE pi.item_id = $iid AND dp.teacher_id = $tid");
-    if($check->num_rows > 0) {
-        $conn->query("DELETE FROM post_items WHERE item_id = $iid");
-        echo json_encode(['status'=>'success']);
-    } else {
-        echo json_encode(['status'=>'error', 'message'=>'Permission denied']);
-    }
-    exit;
-}
 // --- 3. ATTENDANCE MANAGEMENT (Bulk View/Save) ---
 
 if ($action === 'fetch_attendance_sheet') {
@@ -233,17 +150,19 @@ if ($action === 'fetch_attendance_sheet') {
     exit;
 }
 
-// --- 4. MARKS MANAGEMENT ---
+// --- 4. MARKS MANAGEMENT (SUPER ENGINE) ---
 
 if ($action === 'fetch_marks_sheet') {
     $cid = (int)$_POST['class_id'];
     $eid = (int)$_POST['exam_id'];
     $sub = $conn->real_escape_string($_POST['subject_code']);
     
-    $sql = "SELECT s.id, s.name, s.roll_no, m.marks_obtained 
+    // Fetch students and their highly granular marks
+    $sql = "SELECT s.id, s.name, s.roll_no, 
+                   m.pt_marks, m.notebook_marks, m.enrichment_marks, m.exam_marks, m.is_absent 
             FROM students s 
             LEFT JOIN marks m ON s.id = m.student_id AND m.exam_id = $eid AND m.subject_code = '$sub'
-            WHERE s.class_id = $cid AND s.status = 'active' ORDER BY s.roll_no ASC";
+            WHERE s.class_id = $cid AND s.status = 'active' ORDER BY s.roll_no ASC, s.name ASC";
             
     $res = $conn->query($sql);
     $data = [];
@@ -253,19 +172,38 @@ if ($action === 'fetch_marks_sheet') {
     exit;
 }
 
-if ($action === 'save_marks_bulk') {
+if ($action === 'save_single_mark') {
+    $sid = (int)$_POST['student_id'];
     $eid = (int)$_POST['exam_id'];
-    $sub = $_POST['subject_code'];
-    $marks = json_decode($_POST['marks_data'], true); // { sid: marks, sid: marks }
+    $sub = $conn->real_escape_string($_POST['subject_code']);
     
-    $stmt = $conn->prepare("INSERT INTO marks (student_id, exam_id, subject_code, marks_obtained) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE marks_obtained = ?");
+    // Parse values safely. If empty string, convert to NULL for database integrity.
+    $pt = isset($_POST['pt']) && $_POST['pt'] !== '' ? (float)$_POST['pt'] : 'NULL';
+    $nb = isset($_POST['nb']) && $_POST['nb'] !== '' ? (float)$_POST['nb'] : 'NULL';
+    $se = isset($_POST['se']) && $_POST['se'] !== '' ? (float)$_POST['se'] : 'NULL';
+    $ex = isset($_POST['exam']) && $_POST['exam'] !== '' ? (float)$_POST['exam'] : 'NULL';
+    $abs = isset($_POST['is_absent']) ? (int)$_POST['is_absent'] : 0;
     
-    foreach($marks as $sid => $val) {
-        $val = (int)$val;
-        $stmt->bind_param("iisii", $sid, $eid, $sub, $val, $val);
-        $stmt->execute();
+    // Get the dynamic current session globally from settings
+    $sess_res = $conn->query("SELECT setting_value FROM settings WHERE setting_key='current_session'");
+    $sess_row = $sess_res->fetch_assoc();
+    $session_val = $sess_row ? $sess_row['setting_value'] : '2026-2027';
+
+    // The powerful ON DUPLICATE KEY UPDATE query
+    $sql = "INSERT INTO marks (student_id, exam_id, subject_code, session, pt_marks, notebook_marks, enrichment_marks, exam_marks, is_absent) 
+            VALUES ($sid, $eid, '$sub', '$session_val', $pt, $nb, $se, $ex, $abs) 
+            ON DUPLICATE KEY UPDATE 
+            pt_marks = VALUES(pt_marks), 
+            notebook_marks = VALUES(notebook_marks), 
+            enrichment_marks = VALUES(enrichment_marks), 
+            exam_marks = VALUES(exam_marks), 
+            is_absent = VALUES(is_absent)";
+            
+    if ($conn->query($sql)) {
+        echo json_encode(['status'=>'success']);
+    } else {
+        echo json_encode(['status'=>'error', 'message'=>$conn->error]);
     }
-    echo json_encode(['status'=>'success']);
     exit;
 }
 
@@ -522,6 +460,245 @@ if ($action === 'update_student_marks') {
     echo json_encode(['status'=>'success']);
     exit;
 }
+
+// --- FETCH WORK UPLOAD DATA (Required for Create Post Page) ---
+if ($action === 'fetch_work_upload_data') {
+    $tid = (int)$_POST['teacher_id'];
+    
+    $t_res = $conn->query("SELECT assigned_class_id FROM teachers WHERE id = $tid");
+    $teacher = $t_res->fetch_assoc();
+    $class_id = $teacher['assigned_class_id'];
+    
+    $subjects = []; $students = []; $classes = [];
+    
+    if ($class_id) {
+        // Fetch ONLY the subjects mapped to this specific class
+        $sub_res = $conn->query("SELECT s.code, s.name FROM class_subjects cs JOIN subjects s ON cs.subject_code = s.code WHERE cs.class_id = $class_id ORDER BY s.name ASC");
+        while($r = $sub_res->fetch_assoc()) $subjects[] = $r;
+        
+        $stu_res = $conn->query("SELECT id, name, roll_no, profile_pic FROM students WHERE class_id = $class_id AND status='active' ORDER BY roll_no ASC, name ASC");
+        while($r = $stu_res->fetch_assoc()) $students[] = $r;
+    }
+    
+    $cl_res = $conn->query("SELECT id, name FROM classes ORDER BY sort_order ASC");
+    while($r = $cl_res->fetch_assoc()) $classes[] = $r;
+    
+    echo json_encode([
+        'status' => 'success',
+        'is_class_teacher' => !empty($class_id),
+        'subjects' => $subjects,
+        'students' => $students,
+        'classes' => $classes
+    ]);
+    exit;
+}
+
+// --- SMART BATCH WORK UPLOAD & NOTIFICATIONS ---
+if ($action === 'submit_smart_work') {
+    $tid = (int)$_POST['teacher_id'];
+    $type = $_POST['post_type']; // classwork, homework, defaulter, general
+    $date = date('Y-m-d');
+    $item_count = (int)$_POST['item_count'];
+    
+    // Get Teacher Details
+    $t_res = $conn->query("SELECT name, assigned_class_id FROM teachers WHERE id = $tid");
+    $teacher = $t_res->fetch_assoc();
+    $teacher_name = explode(' ', $teacher['name'])[0]; // e.g., "Utkarsh"
+    $class_id = $teacher['assigned_class_id'];
+
+    $upload_dir = '../uploads/work/';
+    if(!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+
+    $notified_classes = []; // Keep track of classes to send push notifications to
+
+    if ($type === 'general') {
+        // --- GENERAL NOTICES ---
+        $target_classes = json_decode($_POST['target_classes'], true);
+        if (in_array('all', $target_classes)) {
+            $cl_res = $conn->query("SELECT id FROM classes");
+            while ($r = $cl_res->fetch_assoc()) $notified_classes[] = $r['id'];
+        } else {
+            $notified_classes = $target_classes;
+        }
+
+        for ($i = 0; $i < $item_count; $i++) {
+            $heading = $conn->real_escape_string($_POST["heading_$i"] ?? 'General Update');
+            $content = $conn->real_escape_string($_POST["content_$i"] ?? '');
+            
+            // For general notices, we save to events_announcements
+            $conn->query("INSERT INTO events_announcements (title, content, date, display_order, teacher_id) VALUES ('$heading', '$content', '$date', 0, $tid)");
+            $item_id = $conn->insert_id;
+
+            // Handle image for notice
+            if (!empty($_FILES["files_$i"]['tmp_name'][0])) {
+                $tmp = $_FILES["files_$i"]['tmp_name'][0];
+                $name = $_FILES["files_$i"]['name'][0];
+                $ext = pathinfo($name, PATHINFO_EXTENSION);
+                $new_name = 'notice_' . time() . '_' . rand(1000,9999) . '.' . $ext;
+                if (move_uploaded_file($tmp, $upload_dir . $new_name)) {
+                    $conn->query("UPDATE events_announcements SET image_url = 'uploads/work/$new_name' WHERE id = $item_id");
+                }
+            }
+        }
+        $notify_title = "School Notice";
+        $notify_body = "A new notice has been posted by $teacher_name.";
+        
+    } else {
+        // --- DAILY POSTS (CW, HW, DEFAULTERS) ---
+        $conn->query("INSERT IGNORE INTO daily_posts (teacher_id, class_id, post_date) VALUES ($tid, $class_id, '$date')");
+        $res = $conn->query("SELECT post_id FROM daily_posts WHERE teacher_id=$tid AND class_id=$class_id AND post_date='$date'");
+        $post_id = $res->fetch_assoc()['post_id'];
+        $notified_classes[] = $class_id;
+
+        for ($i = 0; $i < $item_count; $i++) {
+            $sub_code = $conn->real_escape_string($_POST["subject_$i"] ?? '');
+            $heading = $conn->real_escape_string($_POST["heading_$i"] ?? '');
+            $content = $conn->real_escape_string($_POST["content_$i"] ?? '');
+            $sub_sql = $sub_code ? "'$sub_code'" : "NULL";
+
+            // If heading is blank but subject is given, auto-generate title!
+            // if(empty($heading) && $sub_code) $heading = "$sub_code Update";
+
+            $conn->query("INSERT INTO post_items (post_id, item_type, heading, content, subject_code) VALUES ($post_id, '$type', '$heading', '$content', $sub_sql)");
+            $item_id = $conn->insert_id;
+
+            // Handle Defaulter Students
+            if ($type === 'defaulter' && !empty($_POST["students_$i"])) {
+                $st_list = json_decode($_POST["students_$i"], true);
+                foreach($st_list as $sid) {
+                    $conn->query("INSERT INTO post_defaulters (item_id, student_id) VALUES ($item_id, ".(int)$sid.")");
+                }
+            }
+
+            // Handle Attachments
+            if (!empty($_FILES["files_$i"]['tmp_name'])) {
+                foreach($_FILES["files_$i"]['tmp_name'] as $key => $tmp_name) {
+                    if(empty($tmp_name)) continue;
+                    $name = $_FILES["files_$i"]['name'][$key];
+                    $ext = pathinfo($name, PATHINFO_EXTENSION);
+                    $new_name = 'work_' . time() . '_' . rand(100,999) . '.' . $ext;
+                    if (move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
+                        $db_path = 'uploads/work/' . $new_name;
+                        $conn->query("INSERT INTO post_attachments (item_id, file_path, original_name) VALUES ($item_id, '$db_path', '$name')");
+                    }
+                }
+            }
+        }
+
+        if ($type === 'homework') {
+            $notify_title = "Homework Updated";
+            $notify_body = "Today's homework has been posted by $teacher_name.";
+        } elseif ($type === 'classwork') {
+            $notify_title = "Classwork Updated";
+            $notify_body = "Today's classwork has been posted by $teacher_name.";
+        } else {
+            $notify_title = "Defaulters List";
+            $notify_body = "$teacher_name has updated the defaulters list. Please check the portal.";
+        }
+    }
+
+    // --- AUTOMATED FIREBASE NOTIFICATIONS ---
+    if (!empty($notified_classes) && isset($notify_title) && isset($notify_body)) {
+        // Remove duplicate class IDs just in case
+        $notified_classes = array_unique($notified_classes);
+        
+        foreach ($notified_classes as $notify_cid) {
+            // This triggers your exact existing Firebase Notification Service!
+            $notifier->sendToClass($notify_cid, $notify_title, $notify_body);
+        }
+    }
+
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+// ==================================================================
+// 4.5 TERM ASSESSMENT & CO-SCHOLASTIC ENGINE
+// ==================================================================
+
+if ($action === 'fetch_term_assessment') {
+    $cid = (int)$_POST['class_id'];
+    $eid = (int)$_POST['exam_id'];
+    
+    $sql = "SELECT id, name, roll_no FROM students WHERE class_id = $cid AND status = 'active' ORDER BY roll_no ASC, name ASC";
+    $res = $conn->query($sql);
+    $data = [];
+    
+    while($stu = $res->fetch_assoc()) {
+        $sid = $stu['id'];
+        
+        // 1. Get Metadata (Attendance & Remarks)
+        $m_res = $conn->query("SELECT attendance_total, attendance_present, remarks FROM student_term_data WHERE student_id = $sid AND exam_id = $eid");
+        
+        if ($m_res->num_rows > 0) {
+            // Use saved data if the teacher has already saved it
+            $meta = $m_res->fetch_assoc();
+        } else {
+            // SMART FIX: Auto-calculate from daily_attendance if no data exists!
+            $att_q = $conn->query("SELECT 
+                COUNT(CASE WHEN status != 'holiday' THEN 1 END) as total_days,
+                COUNT(CASE WHEN status IN ('present', 'late') THEN 1 END) as present_days
+                FROM daily_attendance WHERE student_id = $sid");
+            $att_data = $att_q->fetch_assoc();
+            
+            $meta = [
+                'attendance_total' => $att_data['total_days'] ?? '',
+                'attendance_present' => $att_data['present_days'] ?? '',
+                'remarks' => ''
+            ];
+        }
+        
+        // 2. Get Co-Scholastic Grades
+        $c_res = $conn->query("SELECT skill_name, grade FROM co_scholastic_grades WHERE student_id = $sid AND exam_id = $eid");
+        $skills = [];
+        while($c = $c_res->fetch_assoc()) {
+            $skills[$c['skill_name']] = $c['grade'];
+        }
+        
+        $stu['meta'] = $meta;
+        $stu['skills'] = $skills;
+        $data[] = $stu;
+    }
+    echo json_encode(['status'=>'success', 'data'=>$data]);
+    exit;
+}
+
+if ($action === 'save_term_assessment') {
+    $sid = (int)$_POST['student_id'];
+    $eid = (int)$_POST['exam_id'];
+    
+    $sess_res = $conn->query("SELECT setting_value FROM settings WHERE setting_key='current_session'");
+    $sess_row = $sess_res ? $sess_res->fetch_assoc() : null;
+    $session_val = $sess_row ? $sess_row['setting_value'] : '2026-2027';
+
+    // 1. Save Metadata (Attendance & Remarks)
+    $att_t = isset($_POST['att_total']) && $_POST['att_total'] !== '' ? (int)$_POST['att_total'] : 'NULL';
+    $att_p = isset($_POST['att_present']) && $_POST['att_present'] !== '' ? (int)$_POST['att_present'] : 'NULL';
+    $rem = $conn->real_escape_string($_POST['remarks'] ?? '');
+
+    $meta_sql = "INSERT INTO student_term_data (student_id, exam_id, session, attendance_total, attendance_present, remarks) 
+                 VALUES ($sid, $eid, '$session_val', $att_t, $att_p, '$rem') 
+                 ON DUPLICATE KEY UPDATE attendance_total=$att_t, attendance_present=$att_p, remarks='$rem'";
+    $conn->query($meta_sql);
+
+    // 2. Save Co-Scholastic Skills
+    $skills = json_decode($_POST['skills'], true);
+    if(is_array($skills)) {
+        $stmt = $conn->prepare("INSERT INTO co_scholastic_grades (student_id, exam_id, session, skill_name, grade) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE grade=VALUES(grade)");
+        foreach($skills as $skill => $grade) {
+            if(!empty($grade)) {
+                $stmt->bind_param("iisss", $sid, $eid, $session_val, $skill, $grade);
+                $stmt->execute();
+            } else {
+                // If teacher clears the grade, delete it from DB
+                $conn->query("DELETE FROM co_scholastic_grades WHERE student_id=$sid AND exam_id=$eid AND skill_name='".$conn->real_escape_string($skill)."'");
+            }
+        }
+    }
+    
+    echo json_encode(['status'=>'success']);
+    exit;
+}
+
 // Fallback
 echo json_encode(['status'=>'error', 'message'=>'Invalid Action']);
 ?>

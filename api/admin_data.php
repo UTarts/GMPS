@@ -1,5 +1,5 @@
 <?php
-error_reporting(E_ALL);
+error_reporting(0);
 ini_set('display_errors', 1);
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
@@ -63,57 +63,104 @@ if ($action === 'get_students') {
     exit;
 }
 
+// --- GET SINGLE STUDENT DEEP DETAILS ---
 if ($action === 'get_student_details') {
-    $sid = (int)$_GET['id'];
-    
-    // A. Profile
-    $profile = $conn->query("SELECT s.*, c.name as class_name FROM students s JOIN classes c ON s.class_id = c.id WHERE s.id=$sid")->fetch_assoc();
-    
-    // B. Attendance (Formatted for Month 1-12)
-    $att_res = $conn->query("SELECT month, days_present, days_absent FROM attendance WHERE student_id=$sid AND year=YEAR(CURDATE())");
+    $id = (int)$_GET['id'];
+    $res = $conn->query("SELECT * FROM students WHERE id = $id");
+    $profile = $res->fetch_assoc();
+
+    // 1. Fetch Attendance (Aggregated by Month for current session)
+    $att_res = $conn->query("
+        SELECT MONTH(date) as month, 
+               SUM(CASE WHEN status IN ('present', 'late') THEN 1 ELSE 0 END) as present_days,
+               SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent_days
+        FROM daily_attendance 
+        WHERE student_id = $id AND YEAR(date) = YEAR(CURDATE())
+        GROUP BY MONTH(date)
+    ");
     $attendance = [];
-    while($r = $att_res->fetch_assoc()) $attendance[(int)$r['month']] = $r;
-    
-    // C. Marks (Grouped by Exam)
-    $exams = [];
-    $ex_res = $conn->query("SELECT id, name, max_marks FROM exams ORDER BY id");
-    while($ex = $ex_res->fetch_assoc()) {
-        $eid = $ex['id'];
-        // Fetch marks for this exam
-        $m_res = $conn->query("SELECT m.marks_obtained, s.name as subject, s.code as subject_code FROM marks m JOIN subjects s ON m.subject_code=s.code WHERE m.student_id=$sid AND m.exam_id=$eid ORDER BY s.name");
-        $ex_marks = [];
-        while($m = $m_res->fetch_assoc()) $ex_marks[] = $m;
-        
-        $ex['results'] = $ex_marks;
-        $exams[] = $ex;
+    while($row = $att_res->fetch_assoc()) {
+        $attendance[$row['month']] = $row;
     }
 
-    echo json_encode(['status' => 'success', 'data' => ['profile'=>$profile, 'attendance'=>$attendance, 'exams'=>$exams]]);
+    // 2. Fetch Exams and split marks (PT, NB, SE, Exam)
+    $exams = [];
+    $ex_q = $conn->query("SELECT id, name FROM exams ORDER BY id");
+    while($ex = $ex_q->fetch_assoc()) {
+        $eid = $ex['id'];
+        $m_res = $conn->query("
+            SELECT s.name as subject, m.pt_marks, m.notebook_marks, m.enrichment_marks, m.exam_marks, m.is_absent 
+            FROM marks m 
+            JOIN subjects s ON m.subject_code = s.code 
+            WHERE m.student_id = $id AND m.exam_id = $eid
+        ");
+        $results = [];
+        while($m = $m_res->fetch_assoc()) {
+            $results[] = $m;
+        }
+        if (count($results) > 0) {
+            $ex['results'] = $results;
+            $exams[] = $ex;
+        }
+    }
+
+    echo json_encode([
+        'status' => 'success',
+        'data' => [
+            'profile' => $profile,
+            'attendance' => $attendance,
+            'exams' => $exams
+        ]
+    ]);
     exit;
 }
 
+// --- SAVE/EDIT SINGLE STUDENT ---
 if ($action === 'save_student') {
     $id = (int)$_POST['id'];
     $name = $conn->real_escape_string($_POST['name']);
-    $roll = !empty($_POST['roll_no']) ? (int)$_POST['roll_no'] : "NULL";
-    $dob = !empty($_POST['dob']) ? "'".$conn->real_escape_string($_POST['dob'])."'" : "NULL";
-    $father = $conn->real_escape_string($_POST['father_name']);
-    $mother = $conn->real_escape_string($_POST['mother_name']);
+    $dob = $conn->real_escape_string($_POST['dob']);
+    $father_name = $conn->real_escape_string($_POST['father_name']);
+    $mother_name = $conn->real_escape_string($_POST['mother_name']);
     $contact = $conn->real_escape_string($_POST['contact']);
+    $roll_no = (int)$_POST['roll_no'];
+    $aadhar_no = $conn->real_escape_string($_POST['aadhar_no']);
+    $login_id = $conn->real_escape_string($_POST['login_id']);
     $address = $conn->real_escape_string($_POST['address']);
-    $login = $conn->real_escape_string($_POST['login_id']);
-    
-    $conn->query("UPDATE students SET name='$name', roll_no=$roll, dob=$dob, father_name='$father', mother_name='$mother', contact='$contact', address='$address', login_id='$login' WHERE id=$id");
+    $class_id = isset($_POST['class_id']) ? (int)$_POST['class_id'] : 0;
 
+    // Ensure we update class_id if passed from the edit dropdown
+    $class_sql = $class_id > 0 ? ", class_id=$class_id" : "";
+
+    $pass_sql = "";
     if (!empty($_POST['password'])) {
-        $hash = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        $conn->query("UPDATE students SET password_hash='$hash' WHERE id=$id");
+        $password = $conn->real_escape_string($_POST['password']);
+        $pass_sql = ", password='$password'";
     }
 
-    $img = uploadFile('image');
-    if ($img) $conn->query("UPDATE students SET profile_pic='$img' WHERE id=$id");
+    $img_sql = "";
+    if (!empty($_FILES['image']['tmp_name'])) {
+        $upload_dir = '../uploads/profiles/';
+        if(!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+        $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+        $new_name = 'student_' . time() . '_' . rand(100,999) . '.' . $ext;
+        if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $new_name)) {
+            $img_sql = ", profile_pic='uploads/profiles/$new_name'";
+        }
+    }
 
-    echo json_encode(['status' => 'success']);
+    $sql = "UPDATE students SET 
+            name='$name', dob='$dob', father_name='$father_name', mother_name='$mother_name', 
+            contact='$contact', roll_no=$roll_no, aadhar_no='$aadhar_no', 
+            login_id='$login_id', address='$address' 
+            $class_sql $pass_sql $img_sql 
+            WHERE id=$id";
+
+    if($conn->query($sql)){
+        echo json_encode(['status' => 'success']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => $conn->error]);
+    }
     exit;
 }
 
@@ -147,6 +194,19 @@ if ($action === 'delete_student') {
     $conn->query("DELETE FROM student_feedback WHERE student_id=$id");
     $conn->query("DELETE FROM students WHERE id=$id");
     echo json_encode(['status' => 'success']);
+    exit;
+}
+
+// GET NEXT SMART STUDENT ID
+if ($action === 'get_next_student_id') {
+    $res = $conn->query("SELECT login_id FROM students WHERE login_id LIKE 'gmps%' ORDER BY LENGTH(login_id) DESC, login_id DESC LIMIT 1");
+    $last_id_num = 0;
+    if ($res && $res->num_rows > 0) {
+        $row = $res->fetch_assoc();
+        $last_id_num = (int)str_replace('gmps', '', $row['login_id']);
+    }
+    $next_id = 'gmps' . str_pad($last_id_num + 1, 5, '0', STR_PAD_LEFT);
+    echo json_encode(['status' => 'success', 'next_id' => $next_id]);
     exit;
 }
 
