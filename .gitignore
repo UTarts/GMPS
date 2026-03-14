@@ -3,3 +3,7 @@ sftp.json
 
 .DS_Store
 Thumbs.db
+
+# Security: Ignore Firebase Service Account Keys
+service-account.json
+api/service-account.json
