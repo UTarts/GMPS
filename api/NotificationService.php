@@ -22,6 +22,9 @@ class NotificationService {
         $date = date('Y-m-d H:i:s');
         file_put_contents(__DIR__ . '/notification_debug.log', "[$date] $msg" . PHP_EOL, FILE_APPEND);
     }
+    private function base64url_encode($data) {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
 
     public function broadcastToAll($title, $body, $data = []) {
         $this->log("Broadcasting to ALL: $title");
@@ -90,20 +93,34 @@ class NotificationService {
 
         $successCount = 0;
         foreach ($tokens as $token) {
+            // 1. Ensure all data values are strings (Firebase requirement)
+            $stringData = [];
+            if (!empty($data)) {
+                foreach ($data as $k => $v) {
+                    $stringData[(string)$k] = (string)$v;
+                }
+            }
+
+            // 2. Build the standard notification payload
             $payload = [
                 'message' => [
                     'token' => $token,
                     'notification' => [
-                        'title' => $title,
-                        'body'  => $body
-                    ],
-                    'data' => (object)$data
+                        'title' => (string)$title,
+                        'body'  => (string)$body
+                    ]
                 ]
             ];
             
+            if (!empty($stringData)) {
+                $payload['message']['data'] = $stringData;
+            }
+            
+            // 3. THE CRITICAL MISSING PIECE: Actually send the request!
             $result = $this->makeRequest($url, $headers, $payload);
             $resJson = json_decode($result, true);
 
+            // 4. Handle Google's Response
             if (isset($resJson['error'])) {
                 $this->log("FCM Error: " . json_encode($resJson['error']));
                 
@@ -122,23 +139,33 @@ class NotificationService {
     }
 
     private function getGoogleAccessToken() {
-        if (!file_exists($this->serviceAccountPath)) return null;
+        if (!file_exists($this->serviceAccountPath)) {
+            $this->log("Auth Error: service-account.json not found.");
+            return null;
+        }
         $key = json_decode(file_get_contents($this->serviceAccountPath), true);
         
+        // 5-minute buffer to account for Hostinger clock drift
         $now = time();
-        $jwtHeader = base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
-        $jwtClaim = base64_encode(json_encode([
+        $iat = $now - 300; 
+        $exp = $iat + 3600; 
+        
+        $jwtHeader = $this->base64url_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+        $jwtClaim = $this->base64url_encode(json_encode([
             'iss' => $key['client_email'],
             'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
             'aud' => 'https://oauth2.googleapis.com/token',
-            'exp' => $now + 3600,
-            'iat' => $now
+            'exp' => $exp,
+            'iat' => $iat
         ]));
 
         $dataToSign = $jwtHeader . '.' . $jwtClaim;
         $signature = '';
-        if (!openssl_sign($dataToSign, $signature, $key['private_key'], 'SHA256')) return null;
-        $jwt = $dataToSign . '.' . base64_encode($signature);
+        if (!openssl_sign($dataToSign, $signature, $key['private_key'], 'SHA256')) {
+            $this->log("Auth Error: openssl_sign failed. Private key may be corrupted.");
+            return null;
+        }
+        $jwt = $dataToSign . '.' . $this->base64url_encode($signature);
 
         $ch = curl_init('https://oauth2.googleapis.com/token');
         curl_setopt($ch, CURLOPT_POST, true);
@@ -147,16 +174,40 @@ class NotificationService {
             'assertion' => $jwt
         ]));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        // --- THE CRITICAL FIX FOR HOSTINGER ---
+        // Bypasses SSL verification in case Hostinger's CA root certificates expired
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        
         $res = curl_exec($ch);
+        
+        // If Hostinger's cURL completely crashes, log the exact server error
+        if ($res === false) {
+            $this->log("Hostinger cURL Error: " . curl_error($ch));
+            curl_close($ch);
+            return null;
+        }
+        
         curl_close($ch);
-        return json_decode($res, true)['access_token'] ?? null;
+        
+        $json = json_decode($res, true);
+        
+        // If Google rejects the token, log Google's exact reason
+        if (isset($json['error'])) {
+            $errorDesc = $json['error_description'] ?? 'No description provided by Google';
+            $this->log("Google API Rejected Auth: " . $json['error'] . " - " . $errorDesc);
+            return null;
+        }
+        
+        return $json['access_token'] ?? null;
     }
 
     private function makeRequest($url, $headers, $payload) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $res = curl_exec($ch);
         curl_close($ch);

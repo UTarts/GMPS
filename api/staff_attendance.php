@@ -1,5 +1,6 @@
 <?php
 error_reporting(0);
+date_default_timezone_set('Asia/Kolkata');
 // 1. Bulletproof CORS Headers
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
