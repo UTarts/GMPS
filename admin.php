@@ -890,24 +890,32 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '')==='saveAdmis
     $conn->query("INSERT INTO admissions_dates (label,date_value,display_order) VALUES ('$lbl','$date',999)");
   }
 
-  // 4) Fees
+  // 4) Fees (Updated for Accounts System)
   $conn->query("TRUNCATE TABLE fee_structure");
   foreach ($_POST['fee_class'] as $id => $cls) {
     if ($id==='new') continue;
-    $t = (float)$_POST['fee_tuit'][$id];
-    $r = (float)$_POST['fee_reg'][$id];
-    $m = (float)$_POST['fee_misc'][$id];
+    $m = (float)$_POST['fee_monthly'][$id];
+    $a = (float)$_POST['fee_adm'][$id];
+    $s = (float)$_POST['fee_sess'][$id];
+    $e = (float)$_POST['fee_exam'][$id];
+    $o = (float)$_POST['fee_online'][$id];
+    $kn = (float)$_POST['fee_kit_new'][$id];
+    $ko = (float)$_POST['fee_kit_old'][$id];
     $cls = $conn->real_escape_string($cls);
-    $conn->query("INSERT INTO fee_structure (class_name,tuition_fee,registration_fee,misc_fee,display_order) VALUES ('$cls',$t,$r,$m,$id)");
+    $conn->query("INSERT INTO fee_structure (class_name,monthly_fee,admission_fee,session_fee,exam_fee,online_services,kit_new,kit_old,display_order) VALUES ('$cls',$m,$a,$s,$e,$o,$kn,$ko,$id)");
   }
   foreach ($_POST['fee_class']['new'] as $i=>$cls) {
     $cls = trim($cls);
     if ($cls==='') continue;
-    $t=(float)$_POST['fee_tuit']['new'][$i];
-    $r=(float)$_POST['fee_reg']['new'][$i];
-    $m=(float)$_POST['fee_misc']['new'][$i];
+    $m = (float)$_POST['fee_monthly']['new'][$i];
+    $a = (float)$_POST['fee_adm']['new'][$i];
+    $s = (float)$_POST['fee_sess']['new'][$i];
+    $e = (float)$_POST['fee_exam']['new'][$i];
+    $o = (float)$_POST['fee_online']['new'][$i];
+    $kn = (float)$_POST['fee_kit_new']['new'][$i];
+    $ko = (float)$_POST['fee_kit_old']['new'][$i];
     $cls = $conn->real_escape_string($cls);
-    $conn->query("INSERT INTO fee_structure (class_name,tuition_fee,registration_fee,misc_fee,display_order) VALUES ('$cls',$t,$r,$m,999)");
+    $conn->query("INSERT INTO fee_structure (class_name,monthly_fee,admission_fee,session_fee,exam_fee,online_services,kit_new,kit_old,display_order) VALUES ('$cls',$m,$a,$s,$e,$o,$kn,$ko,999)");
   }
 
   // 5) FAQ
@@ -2011,27 +2019,37 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action'] ?? '') === 'saveDis
               </tr>
             </table>
 
-            <h4>Fee Structure</h4>
+            <h4>Fee Structure (Accounts Setup)</h4>
+            <div style="overflow-x: auto;">
             <table>
-              <tr><th>Class</th><th>Tuition</th><th>Registration</th><th>Misc</th></tr>
+              <tr><th>Class</th><th>Monthly</th><th>Adm (New)</th><th>Sess (Yr)</th><th>Exam (Yr)</th><th>Online (Yr)</th><th>Kit (New)</th><th>Kit (Old)</th></tr>
               <?php
-                $f = $conn->query("SELECT id,class_name,tuition_fee,registration_fee,misc_fee FROM fee_structure ORDER BY display_order");
+                $f = $conn->query("SELECT id,class_name,monthly_fee,admission_fee,session_fee,exam_fee,online_services,kit_new,kit_old FROM fee_structure ORDER BY display_order");
                 while($row = $f->fetch_assoc()):
               ?>
               <tr>
-                <td><input name="fee_class[<?=$row['id']?>]" value="<?=htmlspecialchars($row['class_name'])?>" style="width:100px"></td>
-                <td><input name="fee_tuit[<?=$row['id']?>]" value="<?=$row['tuition_fee']?>" style="width:80px"></td>
-                <td><input name="fee_reg[<?=$row['id']?>]" value="<?=$row['registration_fee']?>" style="width:80px"></td>
-                <td><input name="fee_misc[<?=$row['id']?>]" value="<?=$row['misc_fee']?>" style="width:80px"></td>
+                <td><input name="fee_class[<?=$row['id']?>]" value="<?=htmlspecialchars($row['class_name'])?>" style="width:70px"></td>
+                <td><input name="fee_monthly[<?=$row['id']?>]" value="<?=$row['monthly_fee']?>" style="width:60px"></td>
+                <td><input name="fee_adm[<?=$row['id']?>]" value="<?=$row['admission_fee']?>" style="width:60px"></td>
+                <td><input name="fee_sess[<?=$row['id']?>]" value="<?=$row['session_fee']?>" style="width:60px"></td>
+                <td><input name="fee_exam[<?=$row['id']?>]" value="<?=$row['exam_fee']?>" style="width:60px"></td>
+                <td><input name="fee_online[<?=$row['id']?>]" value="<?=$row['online_services']?>" style="width:60px"></td>
+                <td><input name="fee_kit_new[<?=$row['id']?>]" value="<?=$row['kit_new']?>" style="width:60px"></td>
+                <td><input name="fee_kit_old[<?=$row['id']?>]" value="<?=$row['kit_old']?>" style="width:60px"></td>
               </tr>
               <?php endwhile; ?>
               <tr>
-                <td><input name="fee_class[new][]" placeholder="Class" style="width:100px"></td>
-                <td><input name="fee_tuit[new][]" placeholder="0.00" style="width:80px"></td>
-                <td><input name="fee_reg[new][]" placeholder="0.00" style="width:80px"></td>
-                <td><input name="fee_misc[new][]" placeholder="0.00" style="width:80px"></td>
+                <td><input name="fee_class[new][]" placeholder="Class" style="width:70px"></td>
+                <td><input name="fee_monthly[new][]" placeholder="0" style="width:60px"></td>
+                <td><input name="fee_adm[new][]" placeholder="3000" style="width:60px"></td>
+                <td><input name="fee_sess[new][]" placeholder="3000" style="width:60px"></td>
+                <td><input name="fee_exam[new][]" placeholder="3500" style="width:60px"></td>
+                <td><input name="fee_online[new][]" placeholder="500" style="width:60px"></td>
+                <td><input name="fee_kit_new[new][]" placeholder="1000" style="width:60px"></td>
+                <td><input name="fee_kit_old[new][]" placeholder="500" style="width:60px"></td>
               </tr>
             </table>
+            </div>
 
             <h4>Admissions FAQ</h4>
             <table>

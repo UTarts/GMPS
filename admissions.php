@@ -19,12 +19,14 @@
      FROM admissions_dates
      ORDER BY display_order"
   );
-  // 4) Fees
-  $fees = $conn->query(
-    "SELECT class_name, tuition_fee, registration_fee, misc_fee
-     FROM fee_structure
-     ORDER BY display_order"
-  );
+  // 4) Fees 
+  $fees_res = $conn->query("SELECT * FROM fee_structure ORDER BY display_order");
+  $fee_data = [];
+  while($row = $fees_res->fetch_assoc()) {
+      $fee_data[] = $row;
+  }
+  // Extract universal fees from the first row to display as cards
+  $general_fees = $fee_data[0] ?? null;
   // 5) FAQ
   $faqs = $conn->query(
     "SELECT question, answer
@@ -178,29 +180,71 @@
 
 
         
-        <!-- Fee Structure -->
-        <section class="fee-structure">
-            <h2>Fee Structure</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Class</th>
-                        <th>Tuition Fee (Monthly)</th>
-                        <th>Registration Fee (yearly)</th>
-                        <th>Miscellaneous Fee (yearly)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while($f = $fees->fetch_assoc()): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($f['class_name']) ?></td>
-                        <td>₹<?= number_format($f['tuition_fee']) ?></td>
-                        <td>₹<?= number_format($f['registration_fee']) ?></td>
-                        <td>₹<?= number_format($f['misc_fee']) ?></td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
+<section class="fee-structure" style="background: transparent; box-shadow: none; padding: 0;">
+            <h2 style="text-align: center; color: var(--primary-color); margin-bottom: 25px;">Fee Structure</h2>
+            
+            <?php if($general_fees): ?>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border-top: 4px solid var(--primary-color); box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;">
+                    <h4 style="margin: 0 0 5px 0; color: #555;">Admission Fee</h4>
+                    <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #222;">₹<?= number_format($general_fees['admission_fee']) ?></p>
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--primary-color);">For New Admissions Only</span>
+                </div>
+                
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border-top: 4px solid #e76910; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;">
+                    <h4 style="margin: 0 0 5px 0; color: #555;">Session Fee</h4>
+                    <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #222;">₹<?= number_format($general_fees['session_fee']) ?></p>
+                    <span style="font-size: 0.8rem; font-weight: 600; color: #e76910;">All Students (Yearly)</span>
+                </div>
+                
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border-top: 4px solid #28a745; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;">
+                    <h4 style="margin: 0 0 5px 0; color: #555;">Exam Fee</h4>
+                    <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #222;">₹<?= number_format($general_fees['exam_fee']) ?></p>
+                    <span style="font-size: 0.8rem; font-weight: 600; color: #28a745;">All Students (Yearly)</span>
+                </div>
+
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border-top: 4px solid #17a2b8; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;">
+                    <h4 style="margin: 0 0 5px 0; color: #555;">Online Services</h4>
+                    <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #222;">₹<?= number_format($general_fees['online_services']) ?></p>
+                    <span style="font-size: 0.8rem; font-weight: 600; color: #17a2b8;">All Students (Yearly)</span>
+                </div>
+                
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border-top: 4px solid #6a11cb; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;">
+                    <h4 style="margin: 0 0 5px 0; color: #555;">Student Kit</h4>
+                    <p style="margin: 0; font-weight: bold; color: #222; font-size: 1.1rem;">
+                        New Students: ₹<?= number_format($general_fees['kit_new']) ?> <br> 
+                        Old Students: ₹<?= number_format($general_fees['kit_old']) ?>
+                    </p>
+                </div>
+
+            </div>
+            <?php endif; ?>
+
+            <h3 style="text-align: center; margin-bottom: 15px; color: #333;">Monthly Tuition Fee</h3>
+            
+            <div style="background: #fff; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); overflow: hidden; max-width: 600px; width: 100%; margin: 0 auto; display: block;">
+                <table style="width: 100%; min-width: 100%; border-collapse: collapse; margin: 0 auto;">
+                    <thead>
+                        <tr style="background: var(--primary-color);">
+                            <th style="width: 50%; padding: 15px; text-align: center; color: #fff; border-bottom: 2px solid #eee; text-transform: uppercase; letter-spacing: 1px;">Class</th>
+                            <th style="width: 50%; padding: 15px; text-align: center; color: #fff; border-bottom: 2px solid #eee; text-transform: uppercase; letter-spacing: 1px;">Monthly Fee</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($fee_data as $f): ?>
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="width: 50%; padding: 15px; text-align: center; font-weight: 600; color: #333; font-size: 1.05rem;">
+                                <?= htmlspecialchars($f['class_name']) ?>
+                            </td>
+                            <td style="width: 50%; padding: 15px; text-align: center; color: var(--primary-color); font-weight: bold; font-size: 1.1rem;">
+                                ₹<?= number_format($f['monthly_fee']) ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <!--  faq section code   -->

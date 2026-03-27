@@ -36,7 +36,7 @@ $stats_res = $conn->query("SELECT label, value FROM home_statistics ORDER BY id"
 <!DOCTYPE html>
 <html lang="en" style="scroll-behavior: smooth;">
 <head>
-    <title>Govind Madhav Public School - Home</title>
+    <title>Govind Madhav Public School | Pratapgarh, UP</title>
     <?php include 'includes/meta.php'; ?>
 </head>
 <body>
