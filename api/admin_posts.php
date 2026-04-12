@@ -70,8 +70,9 @@ if ($method === 'POST' && in_array($action, ['save_notice', 'save_update', 'save
         
         if($conn->query($sql)) {
             $success = true;
-            // TRIGGER NOTIFICATION
-            $notifier->broadcastToAll("📢 New Notice: $title", "Tap to check the latest school announcement.");
+            // TRIGGER NOTIFICATION - Show actual content and make it clickable
+            $shortContent = mb_strlen($content) > 100 ? mb_substr(strip_tags($content), 0, 100) . '...' : strip_tags($content);
+            $notifier->broadcastToAll("📢 " . $title, $shortContent, ['url' => '/events']);
         } else {
             $errorMsg = $conn->error;
         }
@@ -87,9 +88,8 @@ if ($method === 'POST' && in_array($action, ['save_notice', 'save_update', 'save
 
         if($conn->query($sql)) {
             $success = true;
-            // TRIGGER NOTIFICATION
-            $shortText = substr($text, 0, 50) . '...';
-            $notifier->broadcastToAll("🔔 Daily Update", $shortText);
+            // TRIGGER NOTIFICATION - Custom message for highlights without raw URL
+            $notifier->broadcastToAll("✨ New Highlight Added", "A new item has been added to the daily highlights.", ['url' => '/events']);
         } else {
             $errorMsg = $conn->error;
         }
@@ -108,7 +108,9 @@ if ($method === 'POST' && in_array($action, ['save_notice', 'save_update', 'save
         if($conn->query($sql)) {
             $success = true;
             $formattedDate = date("d/m/Y", strtotime($date)); 
-            $notifier->broadcastToAll("🗓️ New Event: $title", "Mark your calendars for $formattedDate!");
+            // Show event description and date, make it clickable
+            $shortDesc = mb_strlen($desc) > 80 ? mb_substr(strip_tags($desc), 0, 80) . '...' : strip_tags($desc);
+            $notifier->broadcastToAll("📅 " . $title, "$shortDesc (On $formattedDate)", ['url' => '/events']);
         } else {
             $errorMsg = $conn->error;
         }

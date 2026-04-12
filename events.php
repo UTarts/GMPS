@@ -1,6 +1,16 @@
 <?php
 require_once __DIR__ . '/includes/db_connect.php';
-
+// Helper to convert Instagram links into embedded highlights
+function renderHighlight($text) {
+    $escaped = htmlspecialchars($text);
+    // Convert Instagram URLs to iframes seamlessly
+    $replaced = preg_replace(
+        '/(https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel)\/[a-zA-Z0-9_-]+)\/?/i',
+        '<iframe src="$1/embed" width="100%" height="480" frameborder="0" scrolling="no" allowtransparency="true" style="border-radius:12px; margin-top:10px; border:1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></iframe>',
+        $escaped
+    );
+    return nl2br($replaced);
+}
 // --- DATA FETCHING ---
 // Reverted sorting to 'display_order' as requested
 
@@ -72,7 +82,7 @@ $evs = $conn->query("SELECT title, event_date, description, image_url FROM event
                         </div>
                     <?php endif; ?>
                     <div class="card-content">
-                        <p><?= nl2br(htmlspecialchars($u['update_text'])) ?></p>
+                        <?= renderHighlight($u['update_text']) ?>
                     </div>
                 </div>
                 <?php endwhile; ?>

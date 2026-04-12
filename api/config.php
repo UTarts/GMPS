@@ -10,14 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
-$servername = "localhost";
-$dbUsername = "root";    
-$dbPassword = "";       
-$dbName     = "gmps_db";
-// $servername = "localhost"; 
-// $dbUsername = "u355175815_gmps"; 
-// $dbPassword = "Ut@860302"; 
-// $dbName     = "u355175815_gmps_db"; 
+// $servername = "localhost";
+// $dbUsername = "root";    
+// $dbPassword = "";       
+// $dbName     = "gmps_db";
+$servername = "localhost"; 
+$dbUsername = "u355175815_gmps"; 
+$dbPassword = "Ut@860302"; 
+$dbName     = "u355175815_gmps_db"; 
 
 $conn = new mysqli($servername, $dbUsername, $dbPassword, $dbName);
 
@@ -28,4 +28,12 @@ if ($conn->connect_error) {
 $conn->query("SET time_zone = '+05:30'");
 
 session_start();
+// Helper to get current session from settings table
+function getCurrentSession($conn) {
+    $res = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'current_session' LIMIT 1");
+    if ($res && $row = $res->fetch_assoc()) {
+        return $row['setting_value'];
+    }
+    return date('Y') . '-' . (date('Y') + 1); // Fallback if table is empty
+}
 ?>
