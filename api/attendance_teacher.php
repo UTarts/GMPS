@@ -174,6 +174,31 @@ if ($action === 'mark_holiday') {
             );
         }
     }
+    require_once 'NotificationService.php';
+
+    // 2. Get Class Name
+    $cls_res = $conn->query("SELECT name FROM classes WHERE id = " . (int)$class_id);
+    $class_name = $cls_res ? $cls_res->fetch_assoc()['name'] : 'Unknown';
+
+    // 3. Find all Super Admins (Level 1) and Admins (Level 2)
+    $admin_ids = [];
+    $admin_res = $conn->query("SELECT id FROM admins WHERE level IN (1, 2)");
+    if ($admin_res) {
+        while($a = $admin_res->fetch_assoc()) {
+            $admin_ids[] = $a['id'];
+        }
+    }
+
+    // 4. Send the Push Notification
+    if (count($admin_ids) > 0) {
+        $notifier = new NotificationService($conn);
+        $title = "Attendance: Class $class_name ✅";
+        $body = "Submitted! Present: $present_count | Absent: $absent_count";
+        
+        // Send to Admins (Note: Ensure your NotificationService handles admin IDs correctly, 
+        // or targets the 'admin' role if your token table requires it.)
+        $notifier->sendToUserIds($admin_ids, $title, $body, ['url' => '/admin/attendance']);
+    }
 
     echo json_encode(['status'=>'success', 'message'=>'Holiday marked successfully']);
     exit;
