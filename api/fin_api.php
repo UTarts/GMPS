@@ -1,20 +1,12 @@
 <?php
-/**
- * GMPS Finance API — fin_api.php
- * Upload to: /api/fin_api.php
- * 
- * All column names match actual live DB schema (snake_case)
- * Tested against u355175815_gmps_db-7.sql schema
- */
-
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
-require_once __DIR__ . '/../includes/db.php';
-
+require_once 'config.php';
+$db = $conn;
 // ── Auth helper ────────────────────────────────────────────────────────────
 function get_auth(mysqli $db): ?array {
     $h = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
