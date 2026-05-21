@@ -87,25 +87,30 @@ if ($action === 'save_batch') {
         }
     }
 
-    // --- TRIGGER NOTIFICATIONS ---
-    $formattedDate = date("d/m/Y", strtotime($date));
+    // Catch the silent_mode flag sent from the frontend Proxy Page
+    $silent_mode = isset($input['silent_mode']) ? $input['silent_mode'] : false;
 
-    // 1. Notify PRESENT Students
-    if (!empty($presentIds)) {
-        $notifier->sendToUserIds(
-            $presentIds, 
-            "✅ Attendance: Present", 
-            "You have been marked PRESENT for today ($formattedDate)."
-        );
-    }
+    // --- TRIGGER NOTIFICATIONS (ONLY IF SILENT MODE IS FALSE) ---
+    if (!$silent_mode) {
+        $formattedDate = date("d/m/Y", strtotime($date));
 
-    // 2. Notify ABSENT Students
-    if (!empty($absentIds)) {
-        $notifier->sendToUserIds(
-            $absentIds, 
-            "❌ Attendance: Absent", 
-            "You have been marked ABSENT for today ($formattedDate)."
-        );
+        // 1. Notify PRESENT Students
+        if (!empty($presentIds)) {
+            $notifier->sendToUserIds(
+                $presentIds, 
+                "✅ Attendance: Present", 
+                "You have been marked PRESENT for today ($formattedDate)."
+            );
+        }
+
+        // 2. Notify ABSENT Students
+        if (!empty($absentIds)) {
+            $notifier->sendToUserIds(
+                $absentIds, 
+                "❌ Attendance: Absent", 
+                "You have been marked ABSENT for today ($formattedDate)."
+            );
+        }
     }
     
     echo json_encode(['status'=>'success', 'message'=>'Attendance saved']);
