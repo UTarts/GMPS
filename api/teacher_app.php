@@ -183,6 +183,15 @@ if ($action === 'save_single_mark') {
     $se = isset($_POST['se']) && $_POST['se'] !== '' ? (float)$_POST['se'] : 'NULL';
     $ex = isset($_POST['exam']) && $_POST['exam'] !== '' ? (float)$_POST['exam'] : 'NULL';
     $abs = isset($_POST['is_absent']) ? (int)$_POST['is_absent'] : 0;
+
+    if ($pt === NULL && $nb === NULL && $se === NULL && $ex === NULL && $abs === 0) {
+        $conn->query("DELETE FROM marks 
+                      WHERE student_id = $sid 
+                      AND exam_id = $eid 
+                      AND subject_code = '$sub'");
+        echo json_encode(['status' => 'success']);
+        exit;
+    }
     
     // Get the dynamic current session globally from settings
     $sess_res = $conn->query("SELECT setting_value FROM settings WHERE setting_key='current_session'");

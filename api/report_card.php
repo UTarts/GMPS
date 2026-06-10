@@ -78,10 +78,17 @@ if ($action === 'generate_class_reports') {
         $max_grand_total = 0;
         
         $m_sql = "SELECT s.name as subject_name, m.pt_marks, m.notebook_marks, m.enrichment_marks, m.exam_marks, m.is_absent 
-                  FROM marks m 
-                  JOIN subjects s ON m.subject_code = s.code 
-                  WHERE m.student_id = $sid AND m.exam_id = $eid 
-                  ORDER BY s.name ASC";
+          FROM marks m 
+          JOIN subjects s ON m.subject_code = s.code 
+          WHERE m.student_id = $sid AND m.exam_id = $eid 
+          AND (
+              m.is_absent = 1
+              OR m.pt_marks IS NOT NULL 
+              OR m.notebook_marks IS NOT NULL 
+              OR m.enrichment_marks IS NOT NULL 
+              OR m.exam_marks IS NOT NULL
+          )
+          ORDER BY s.name ASC";
         $m_res = $conn->query($m_sql);
         
         while ($m = $m_res->fetch_assoc()) {

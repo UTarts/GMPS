@@ -185,7 +185,7 @@ switch ($action) {
     }
 
     case 'save_class_fee': {
-        $admin   = require_admin($db, 1);
+        $admin   = require_admin($db, 2);
         $class_id    = (int)($body['class_id'] ?? 0);
         $fee_head_id = (int)($body['fee_head_id'] ?? 0);
         $session     = $db->real_escape_string($body['session'] ?? get_session($db));
@@ -242,11 +242,23 @@ switch ($action) {
         $total_due  = array_sum(array_column($invoices, 'total_due'));
         $total_paid = array_sum(array_column($invoices, 'total_paid'));
 
-        json_out(['success'=>true,'student'=>$s,'invoices'=>$invoices,'transactions'=>$transactions,'summary'=>['total_due'=>$total_due,'total_paid'=>$total_paid,'balance'=>$total_due-$total_paid]]);
+        $arrears_r = $db->query("
+            SELECT session,
+                SUM(total_due) AS total_due,
+                SUM(total_paid) AS total_paid,
+                SUM(total_due - total_paid) AS amount_pending
+            FROM fin_invoices
+            WHERE student_id=$sid AND session != '$session' AND status != 'paid'
+            GROUP BY session ORDER BY session ASC
+        ");
+        $arrears       = $arrears_r ? $arrears_r->fetch_all(MYSQLI_ASSOC) : [];
+        $total_arrears = (float)array_sum(array_column($arrears, 'amount_pending'));
+
+        json_out(['success'=>true,'student'=>$s,'invoices'=>$invoices,'transactions'=>$transactions,'arrears'=>$arrears,'summary'=>['total_due'=>$total_due,'total_paid'=>$total_paid,'balance'=>$total_due-$total_paid,'arrears'=>$total_arrears,'grand_total'=>($total_due-$total_paid)+$total_arrears]]);
     }
 
     case 'generate_invoices': {
-        $admin = require_admin($db, 1);
+        $admin = require_admin($db, 2);
         $session     = $db->real_escape_string($body['session'] ?? get_session($db));
         $inv_month   = (int)($body['month'] ?? date('n'));
         $inv_year    = (int)($body['year']  ?? date('Y'));
@@ -385,7 +397,7 @@ switch ($action) {
     case 'get_all_submissions': {
         require_admin($db);
         $session = $db->real_escape_string(get_session($db));
-        $status  = $db->real_escape_string($_GET['status'] ?? 'pending');
+        $status  = $db->real_escape_string($body['status'] ?? $_GET['status'] ?? 'pending');
         $where   = $status !== 'all' ? "AND fs.status='$status'" : '';
         $r = $db->query("
             SELECT fs.*, s.name AS student_name, s.login_id, c.name AS class_name,
@@ -457,8 +469,8 @@ switch ($action) {
     case 'get_defaulters': {
         require_admin($db);
         $session = $db->real_escape_string(get_session($db));
-        $month   = (int)($_GET['month'] ?? date('n'));
-        $year    = (int)($_GET['year']  ?? date('Y'));
+        $month   = (int)($body['month'] ?? $_GET['month'] ?? date('n'));
+        $year    = (int)($body['year'] ?? $_GET['year'] ?? date('Y'));
         $r = $db->query("
             SELECT s.id, s.name, s.father_name, s.contact, s.login_id,
                    c.name AS class_name,
@@ -477,10 +489,10 @@ switch ($action) {
 
     case 'get_reports': {
         require_admin($db);
-        $type    = $_GET['type'] ?? 'daily';
+        $type    = $body['type'] ?? $_GET['type'] ?? 'daily';
         $session = $db->real_escape_string(get_session($db));
         if ($type === 'daily') {
-            $date = $db->real_escape_string($_GET['date'] ?? date('Y-m-d'));
+            $date = $db->real_escape_string($body['date'] ?? $_GET['date'] ?? date('Y-m-d'));
             $r = $db->query("
                 SELECT ft.*, s.name AS student_name, c.name AS class_name, a.name AS collected_by_name
                 FROM fin_transactions ft
@@ -538,7 +550,19 @@ switch ($action) {
         $total_due  = array_sum(array_column($invoices, 'total_due'));
         $total_paid = array_sum(array_column($invoices, 'total_paid'));
 
-        json_out(['success'=>true,'invoices'=>$invoices,'pending_submissions'=>$pending_sub,'summary'=>['total_due'=>$total_due,'total_paid'=>$total_paid,'balance'=>$total_due-$total_paid]]);
+        $arrears_r2 = $db->query("
+            SELECT session,
+                SUM(total_due) AS total_due,
+                SUM(total_paid) AS total_paid,
+                SUM(total_due - total_paid) AS amount_pending
+            FROM fin_invoices
+            WHERE student_id=$sid AND session != '$session' AND status != 'paid'
+            GROUP BY session ORDER BY session ASC
+        ");
+        $arrears2       = $arrears_r2 ? $arrears_r2->fetch_all(MYSQLI_ASSOC) : [];
+        $total_arrears2 = (float)array_sum(array_column($arrears2, 'amount_pending'));
+
+        json_out(['success'=>true,'invoices'=>$invoices,'pending_submissions'=>$pending_sub,'arrears'=>$arrears2,'summary'=>['total_due'=>$total_due,'total_paid'=>$total_paid,'balance'=>$total_due-$total_paid,'arrears'=>$total_arrears2,'grand_total'=>($total_due-$total_paid)+$total_arrears2]]);
     }
 
     case 'get_my_receipts': {
