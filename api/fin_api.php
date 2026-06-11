@@ -7,6 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
 require_once 'config.php';
 $db = $conn;
+
 // ── Auth helper ────────────────────────────────────────────────────────────
 function get_auth(mysqli $db): ?array {
     $h = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -16,7 +17,7 @@ function get_auth(mysqli $db): ?array {
     }
     $token = '';
     if (str_starts_with($h, 'Bearer ')) $token = substr($h, 7);
-    elseif (!empty($_GET['token'])) $token = $_GET['token'];
+    elseif (!empty($_GET['token']))  $token = $_GET['token'];
     elseif (!empty($_POST['token'])) $token = $_POST['token'];
     if (!$token) return null;
     $hash = hash('sha256', $token);
@@ -34,21 +35,56 @@ function json_out(array $data, int $code = 200): void {
     exit;
 }
 
+// ── Guard: any admin level (1=superadmin, 2=admin, 3=accountant) ──────────
+function require_fin_access(mysqli $db, int $max_level = 3): array {
+    $auth = get_auth($db);
+    if (!$auth || $auth['user_type'] !== 'admin')
+        json_out(['success'=>false,'message'=>'Unauthorized'], 401);
+    $stmt = $db->prepare("SELECT id, name, level, profile_pic, contact FROM admins WHERE id=? LIMIT 1");
+    $stmt->bind_param('i', $auth['user_id']);
+    $stmt->execute();
+    $admin = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$admin || (int)$admin['level'] > $max_level)
+        json_out(['success'=>false,'message'=>'Insufficient permissions'], 403);
+    return $admin;
+}
+
+// ── Guard: original (level must be <= min_level) — kept for old endpoints ─
 function require_admin(mysqli $db, int $min_level = 2): array {
     $auth = get_auth($db);
-    if (!$auth || $auth['user_type'] !== 'admin') json_out(['success'=>false,'message'=>'Unauthorized'], 401);
+    if (!$auth || $auth['user_type'] !== 'admin')
+        json_out(['success'=>false,'message'=>'Unauthorized'], 401);
     $stmt = $db->prepare("SELECT id, name, level FROM admins WHERE id=? LIMIT 1");
     $stmt->bind_param('i', $auth['user_id']);
     $stmt->execute();
     $admin = $stmt->get_result()->fetch_assoc();
     $stmt->close();
-    if (!$admin || $admin['level'] > $min_level) json_out(['success'=>false,'message'=>'Insufficient permissions'], 403);
+    if (!$admin || (int)$admin['level'] > $min_level)
+        json_out(['success'=>false,'message'=>'Insufficient permissions'], 403);
     return $admin;
 }
 
+// ── Guard: superadmin only (level 1) ──────────────────────────────────────
+function require_superadmin(mysqli $db): array {
+    $auth = get_auth($db);
+    if (!$auth || $auth['user_type'] !== 'admin')
+        json_out(['success'=>false,'message'=>'Unauthorized'], 401);
+    $stmt = $db->prepare("SELECT id, name, level FROM admins WHERE id=? LIMIT 1");
+    $stmt->bind_param('i', $auth['user_id']);
+    $stmt->execute();
+    $admin = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$admin || (int)$admin['level'] !== 1)
+        json_out(['success'=>false,'message'=>'Super Admin only.'], 403);
+    return $admin;
+}
+
+// ── Guard: student ─────────────────────────────────────────────────────────
 function require_student(mysqli $db): array {
     $auth = get_auth($db);
-    if (!$auth || $auth['user_type'] !== 'student') json_out(['success'=>false,'message'=>'Unauthorized'], 401);
+    if (!$auth || $auth['user_type'] !== 'student')
+        json_out(['success'=>false,'message'=>'Unauthorized'], 401);
     $stmt = $db->prepare("SELECT id, name, class_id FROM students WHERE id=? AND status='active' LIMIT 1");
     $stmt->bind_param('i', $auth['user_id']);
     $stmt->execute();
@@ -83,39 +119,33 @@ switch ($action) {
     // ════════════════════════════════════════════════════════════════
 
     case 'get_dashboard_stats': {
-        $admin = require_admin($db);
+        $admin   = require_fin_access($db);
         $session = get_session($db);
 
-        // Total collected this session
         $r = $db->query("SELECT COALESCE(SUM(amount_paid),0) AS total FROM fin_transactions WHERE session='$session' AND status='completed'");
         $total_collected = (float)$r->fetch_assoc()['total'];
 
-        // Total outstanding
         $r = $db->query("SELECT COALESCE(SUM(total_due - total_paid),0) AS due FROM fin_invoices WHERE session='$session' AND status != 'paid'");
         $total_due = (float)$r->fetch_assoc()['due'];
 
-        // Pending submissions
         $r = $db->query("SELECT COUNT(*) AS c FROM fin_submissions WHERE session='$session' AND status='pending'");
         $pending = (int)$r->fetch_assoc()['c'];
 
-        // Defaulters (unpaid invoices from previous month)
         $last_month = date('n', strtotime('-1 month'));
         $last_year  = date('Y', strtotime('-1 month'));
         $r = $db->query("SELECT COUNT(DISTINCT student_id) AS c FROM fin_invoices WHERE session='$session' AND invoice_month=$last_month AND invoice_year=$last_year AND status='unpaid'");
         $defaulters = (int)$r->fetch_assoc()['c'];
 
-        // Monthly collection chart (last 12 months)
         $chart = [];
         for ($i = 11; $i >= 0; $i--) {
-            $ts = strtotime("-$i months");
-            $m  = date('n', $ts);
-            $y  = date('Y', $ts);
+            $ts  = strtotime("-$i months");
+            $m   = date('n', $ts);
+            $y   = date('Y', $ts);
             $lbl = date('M Y', $ts);
-            $r = $db->query("SELECT COALESCE(SUM(amount_paid),0) AS amt FROM fin_transactions WHERE MONTH(payment_date)=$m AND YEAR(payment_date)=$y AND status='completed'");
+            $r   = $db->query("SELECT COALESCE(SUM(amount_paid),0) AS amt FROM fin_transactions WHERE MONTH(payment_date)=$m AND YEAR(payment_date)=$y AND status='completed'");
             $chart[] = ['label' => $lbl, 'amount' => (float)$r->fetch_assoc()['amt']];
         }
 
-        // Class-wise collection
         $r = $db->query("
             SELECT c.name AS class_name,
                    COUNT(DISTINCT s.id) AS student_count,
@@ -128,34 +158,99 @@ switch ($action) {
         ");
         $class_data = $r->fetch_all(MYSQLI_ASSOC);
 
-        // Today's collections
-        $today = date('Y-m-d');
-        $r = $db->query("SELECT COALESCE(SUM(amount_paid),0) AS amt, COUNT(*) AS txns FROM fin_transactions WHERE payment_date='$today' AND status='completed'");
+        $today    = date('Y-m-d');
+        $r        = $db->query("SELECT COALESCE(SUM(amount_paid),0) AS amt, COUNT(*) AS txns FROM fin_transactions WHERE payment_date='$today' AND status='completed'");
         $today_row = $r->fetch_assoc();
 
         json_out([
             'success' => true,
-            'stats' => [
-                'total_collected'  => $total_collected,
-                'total_outstanding'=> $total_due,
-                'pending_submissions' => $pending,
-                'defaulters'       => $defaulters,
-                'today_collection' => (float)$today_row['amt'],
-                'today_transactions'=> (int)$today_row['txns'],
+            'stats'   => [
+                'total_collected'    => $total_collected,
+                'total_outstanding'  => $total_due,
+                'pending_submissions'=> $pending,
+                'defaulters'         => $defaulters,
+                'today_collection'   => (float)$today_row['amt'],
+                'today_transactions' => (int)$today_row['txns'],
             ],
             'chart'      => $chart,
             'class_data' => $class_data,
         ]);
     }
 
+    case 'get_fee_matrix': {
+        require_fin_access($db);
+        $classes = [];
+        $cr = $db->query("SELECT id, name FROM classes ORDER BY name ASC");
+        while ($row = $cr->fetch_assoc()) $classes[] = $row;
+
+        $heads = [];
+        $hr = $db->query("SELECT id, name, frequency, is_optional FROM fin_fee_heads WHERE is_active=1 ORDER BY sort_order ASC, id ASC");
+        while ($row = $hr->fetch_assoc()) $heads[] = $row;
+
+        $rows = [];
+        $mr = $db->query("SELECT class_id, fee_head_id, amount FROM fin_fee_matrix");
+        while ($row = $mr->fetch_assoc()) $rows[] = $row;
+
+        json_out(['success' => true, 'classes' => $classes, 'fee_heads' => $heads, 'matrix_rows' => $rows]);
+    }
+
+    case 'save_fee_amounts': {
+        require_fin_access($db);
+        $raw  = $_POST['rows'] ?? ($body['rows'] ?? '[]');
+        $rows = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (empty($rows)) json_out(['success' => false, 'message' => 'No data provided.']);
+        foreach ($rows as $r) {
+            $cid    = (int)$r['class_id'];
+            $hid    = (int)$r['fee_head_id'];
+            $amount = (float)$r['amount'];
+            $check  = $db->query("SELECT id FROM fin_fee_matrix WHERE class_id=$cid AND fee_head_id=$hid LIMIT 1")->fetch_assoc();
+            if ($check) {
+                $db->query("UPDATE fin_fee_matrix SET amount=$amount WHERE class_id=$cid AND fee_head_id=$hid");
+            } else {
+                $db->query("INSERT INTO fin_fee_matrix (class_id, fee_head_id, amount) VALUES ($cid, $hid, $amount)");
+            }
+        }
+        json_out(['success' => true]);
+    }
+
+    case 'add_fee_head': {
+        require_fin_access($db);
+        $name      = $db->real_escape_string(trim($_POST['name'] ?? $body['name'] ?? ''));
+        $frequency = $db->real_escape_string($_POST['frequency'] ?? $body['frequency'] ?? 'yearly');
+        $optional  = (int)($_POST['is_optional'] ?? $body['is_optional'] ?? 0);
+        if (!$name) json_out(['success' => false, 'message' => 'Name required.']);
+        $db->query("INSERT INTO fin_fee_heads (name, frequency, is_optional, is_active) VALUES ('$name','$frequency',$optional,1)");
+        json_out(['success' => true]);
+    }
+
+    case 'update_fee_head': {
+        require_fin_access($db);
+        $id        = (int)($_POST['id'] ?? $body['id'] ?? 0);
+        $name      = $db->real_escape_string(trim($_POST['name'] ?? $body['name'] ?? ''));
+        $frequency = $db->real_escape_string($_POST['frequency'] ?? $body['frequency'] ?? 'yearly');
+        $optional  = (int)($_POST['is_optional'] ?? $body['is_optional'] ?? 0);
+        if (!$id || !$name) json_out(['success' => false, 'message' => 'Invalid data.']);
+        $db->query("UPDATE fin_fee_heads SET name='$name', frequency='$frequency', is_optional=$optional WHERE id=$id");
+        json_out(['success' => true]);
+    }
+
+    case 'delete_fee_head': {
+        require_fin_access($db);
+        $id = (int)($_POST['id'] ?? $body['id'] ?? 0);
+        if (!$id) json_out(['success' => false, 'message' => 'Invalid ID.']);
+        $db->query("DELETE FROM fin_fee_heads WHERE id=$id");
+        $db->query("DELETE FROM fin_fee_matrix WHERE fee_head_id=$id");
+        json_out(['success' => true]);
+    }
+
     case 'get_fee_heads': {
-        require_admin($db);
-        $r = $db->query("SELECT * FROM fin_fee_heads ORDER BY id");
+        require_fin_access($db);
+        $r = $db->query("SELECT * FROM fin_fee_heads WHERE is_active=1 ORDER BY id");
         json_out(['success'=>true,'fee_heads'=>$r->fetch_all(MYSQLI_ASSOC)]);
     }
 
     case 'save_fee_head': {
-        $admin = require_admin($db, 1); // superadmin only
+        $admin = require_admin($db, 1);
         $id    = (int)($body['id'] ?? 0);
         $name  = $db->real_escape_string(trim($body['name'] ?? ''));
         $type  = in_array($body['type'] ?? '', ['monthly','yearly','one_time']) ? $body['type'] : 'monthly';
@@ -170,22 +265,19 @@ switch ($action) {
     }
 
     case 'get_class_fee_matrix': {
-        require_admin($db);
-        $session = $body['session'] ?? get_session($db);
-        $session = $db->real_escape_string($session);
-
-        $heads = $db->query("SELECT id, name, type FROM fin_fee_heads WHERE is_active=1 ORDER BY id")->fetch_all(MYSQLI_ASSOC);
+        require_fin_access($db);
+        $session = $db->real_escape_string($body['session'] ?? get_session($db));
+        $heads   = $db->query("SELECT id, name, type FROM fin_fee_heads WHERE is_active=1 ORDER BY id")->fetch_all(MYSQLI_ASSOC);
         $classes = $db->query("SELECT id, name FROM classes ORDER BY sort_order")->fetch_all(MYSQLI_ASSOC);
-        $fees_r = $db->query("SELECT class_id, fee_head_id, amount FROM fin_class_fees WHERE session='$session'");
+        $fees_r  = $db->query("SELECT class_id, fee_head_id, amount FROM fin_class_fees WHERE session='$session'");
         $fee_map = [];
-        while ($row = $fees_r->fetch_assoc()) {
+        while ($row = $fees_r->fetch_assoc())
             $fee_map[$row['class_id']][$row['fee_head_id']] = (float)$row['amount'];
-        }
         json_out(['success'=>true,'fee_heads'=>$heads,'classes'=>$classes,'fee_map'=>$fee_map,'session'=>$session]);
     }
 
     case 'save_class_fee': {
-        $admin   = require_admin($db, 2);
+        $admin       = require_fin_access($db, 2);
         $class_id    = (int)($body['class_id'] ?? 0);
         $fee_head_id = (int)($body['fee_head_id'] ?? 0);
         $session     = $db->real_escape_string($body['session'] ?? get_session($db));
@@ -198,7 +290,7 @@ switch ($action) {
     }
 
     case 'search_student': {
-        require_admin($db);
+        require_fin_access($db);
         $q = $db->real_escape_string(trim($body['q'] ?? $_GET['q'] ?? ''));
         if (strlen($q) < 2) json_out(['success'=>false,'message'=>'Query too short']);
         $r = $db->query("
@@ -212,8 +304,8 @@ switch ($action) {
     }
 
     case 'get_student_dues': {
-        require_admin($db);
-        $sid = (int)($body['student_id'] ?? $_GET['student_id'] ?? 0);
+        require_fin_access($db);
+        $sid     = (int)($body['student_id'] ?? $_GET['student_id'] ?? 0);
         $session = $db->real_escape_string($body['session'] ?? get_session($db));
         if (!$sid) json_out(['success'=>false,'message'=>'student_id required']);
 
@@ -254,20 +346,26 @@ switch ($action) {
         $arrears       = $arrears_r ? $arrears_r->fetch_all(MYSQLI_ASSOC) : [];
         $total_arrears = (float)array_sum(array_column($arrears, 'amount_pending'));
 
-        json_out(['success'=>true,'student'=>$s,'invoices'=>$invoices,'transactions'=>$transactions,'arrears'=>$arrears,'summary'=>['total_due'=>$total_due,'total_paid'=>$total_paid,'balance'=>$total_due-$total_paid,'arrears'=>$total_arrears,'grand_total'=>($total_due-$total_paid)+$total_arrears]]);
+        json_out(['success'=>true,'student'=>$s,'invoices'=>$invoices,'transactions'=>$transactions,'arrears'=>$arrears,'summary'=>[
+            'total_due'   => $total_due,
+            'total_paid'  => $total_paid,
+            'balance'     => $total_due - $total_paid,
+            'arrears'     => $total_arrears,
+            'grand_total' => ($total_due - $total_paid) + $total_arrears
+        ]]);
     }
 
     case 'generate_invoices': {
-        $admin = require_admin($db, 2);
-        $session     = $db->real_escape_string($body['session'] ?? get_session($db));
-        $inv_month   = (int)($body['month'] ?? date('n'));
-        $inv_year    = (int)($body['year']  ?? date('Y'));
+        $admin     = require_admin($db, 2);
+        $session   = $db->real_escape_string($body['session'] ?? get_session($db));
+        $inv_month = (int)($body['month'] ?? date('n'));
+        $inv_year  = (int)($body['year']  ?? date('Y'));
         if ($inv_month < 1 || $inv_month > 12) json_out(['success'=>false,'message'=>'Invalid month']);
 
-        $students = $db->query("SELECT id, class_id FROM students WHERE status='active'")->fetch_all(MYSQLI_ASSOC);
-        $heads    = $db->query("SELECT id, type FROM fin_fee_heads WHERE is_active=1")->fetch_all(MYSQLI_ASSOC);
-        $fee_rows = $db->query("SELECT class_id, fee_head_id, amount FROM fin_class_fees WHERE session='$session'")->fetch_all(MYSQLI_ASSOC);
-        $fee_map  = [];
+        $students  = $db->query("SELECT id, class_id FROM students WHERE status='active'")->fetch_all(MYSQLI_ASSOC);
+        $heads     = $db->query("SELECT id, type FROM fin_fee_heads WHERE is_active=1")->fetch_all(MYSQLI_ASSOC);
+        $fee_rows  = $db->query("SELECT class_id, fee_head_id, amount FROM fin_class_fees WHERE session='$session'")->fetch_all(MYSQLI_ASSOC);
+        $fee_map   = [];
         foreach ($fee_rows as $fr) $fee_map[$fr['class_id']][$fr['fee_head_id']] = (float)$fr['amount'];
         $overrides_r = $db->query("SELECT student_id, fee_head_id, custom_amount FROM fin_student_settings WHERE session='$session'");
         $ov_map = [];
@@ -276,16 +374,11 @@ switch ($action) {
         $created = 0; $skipped = 0;
         foreach ($students as $st) {
             $sid = $st['id']; $cid = $st['class_id'];
-            // Check if invoice already exists
             $exists = $db->query("SELECT id FROM fin_invoices WHERE student_id=$sid AND invoice_month=$inv_month AND invoice_year=$inv_year AND session='$session' LIMIT 1");
             if ($exists->num_rows > 0) { $skipped++; continue; }
-
-            $total = 0;
-            $line_items = [];
+            $total = 0; $line_items = [];
             foreach ($heads as $h) {
-                $hid  = $h['id'];
-                $type = $h['type'];
-                // Monthly: always include. Yearly: only April (month 4). One-time: skip in bulk generate
+                $hid  = $h['id']; $type = $h['type'];
                 if ($type === 'yearly'   && $inv_month !== 4) continue;
                 if ($type === 'one_time') continue;
                 $amt = $ov_map[$sid][$hid] ?? $fee_map[$cid][$hid] ?? 0;
@@ -294,28 +387,23 @@ switch ($action) {
                 $line_items[] = ['fee_head_id' => $hid, 'amount' => $amt];
             }
             if ($total <= 0) { $skipped++; continue; }
-
-            $db->query("INSERT INTO fin_invoices (student_id, session, invoice_month, invoice_year, total_due, total_paid, status)
-                        VALUES ($sid, '$session', $inv_month, $inv_year, $total, 0, 'unpaid')");
+            $db->query("INSERT INTO fin_invoices (student_id, session, invoice_month, invoice_year, total_due, total_paid, status) VALUES ($sid, '$session', $inv_month, $inv_year, $total, 0, 'unpaid')");
             $inv_id = $db->insert_id;
-            foreach ($line_items as $li) {
+            foreach ($line_items as $li)
                 $db->query("INSERT INTO fin_invoice_heads (invoice_id, fee_head_id, amount) VALUES ($inv_id, {$li['fee_head_id']}, {$li['amount']})");
-            }
             $created++;
         }
         json_out(['success'=>true,'created'=>$created,'skipped'=>$skipped,'month'=>$inv_month,'year'=>$inv_year]);
     }
 
     case 'add_onetime_fee': {
-        $admin = require_admin($db);
+        $admin       = require_fin_access($db);
         $sid         = (int)($body['student_id'] ?? 0);
         $fee_head_id = (int)($body['fee_head_id'] ?? 0);
         $session     = $db->real_escape_string($body['session'] ?? get_session($db));
         $amount      = (float)($body['amount'] ?? 0);
         if (!$sid || !$fee_head_id || $amount <= 0) json_out(['success'=>false,'message'=>'student_id, fee_head_id, amount required']);
-
-        $now_m = (int)date('n');
-        $now_y = (int)date('Y');
+        $now_m = (int)date('n'); $now_y = (int)date('Y');
         $exists = $db->query("SELECT id FROM fin_invoices WHERE student_id=$sid AND invoice_month=$now_m AND invoice_year=$now_y AND session='$session' LIMIT 1")->fetch_assoc();
         if ($exists) {
             $inv_id = $exists['id'];
@@ -330,7 +418,7 @@ switch ($action) {
     }
 
     case 'save_student_override': {
-        $admin = require_admin($db);
+        $admin       = require_fin_access($db);
         $sid         = (int)($body['student_id'] ?? 0);
         $fee_head_id = (int)($body['fee_head_id'] ?? 0);
         $session     = $db->real_escape_string($body['session'] ?? get_session($db));
@@ -344,27 +432,25 @@ switch ($action) {
     }
 
     case 'collect_cash': {
-        $admin = require_admin($db);
-        $sid          = (int)($body['student_id'] ?? 0);
-        $invoice_ids  = $body['invoice_ids'] ?? [];
-        $amount       = (float)($body['amount_paid'] ?? 0);
-        $mode         = in_array($body['payment_mode'] ?? '', ['cash','upi','cheque','bank_transfer']) ? $body['payment_mode'] : 'cash';
-        $ref          = $db->real_escape_string($body['reference_no'] ?? '');
-        $date         = $db->real_escape_string($body['payment_date'] ?? date('Y-m-d'));
-        $remarks      = $db->real_escape_string($body['remarks'] ?? '');
-        $session      = $db->real_escape_string(get_session($db));
+        $admin       = require_fin_access($db);
+        $sid         = (int)($body['student_id'] ?? 0);
+        $invoice_ids = $body['invoice_ids'] ?? [];
+        $amount      = (float)($body['amount_paid'] ?? 0);
+        $mode        = in_array($body['payment_mode'] ?? '', ['cash','upi','cheque','bank_transfer']) ? $body['payment_mode'] : 'cash';
+        $ref         = $db->real_escape_string($body['reference_no'] ?? '');
+        $date        = $db->real_escape_string($body['payment_date'] ?? date('Y-m-d'));
+        $remarks     = $db->real_escape_string($body['remarks'] ?? '');
+        $session     = $db->real_escape_string(get_session($db));
         if (!$sid || $amount <= 0 || empty($invoice_ids)) json_out(['success'=>false,'message'=>'student_id, amount_paid, invoice_ids required']);
 
         $receipt_no = next_receipt($db);
         $db->query("INSERT INTO fin_transactions (receipt_no, student_id, session, amount_paid, payment_mode, reference_no, collected_by, payment_date, remarks, status)
                     VALUES ('$receipt_no', $sid, '$session', $amount, '$mode', '$ref', {$admin['id']}, '$date', '$remarks', 'completed')");
-        $txn_id = $db->insert_id;
-
-        // Distribute payment across invoices and update totals
+        $txn_id    = $db->insert_id;
         $remaining = $amount;
         foreach ($invoice_ids as $inv_id) {
             $inv_id = (int)$inv_id;
-            $inv = $db->query("SELECT total_due, total_paid FROM fin_invoices WHERE id=$inv_id AND student_id=$sid LIMIT 1")->fetch_assoc();
+            $inv    = $db->query("SELECT total_due, total_paid FROM fin_invoices WHERE id=$inv_id AND student_id=$sid LIMIT 1")->fetch_assoc();
             if (!$inv) continue;
             $balance = $inv['total_due'] - $inv['total_paid'];
             $apply   = min($remaining, $balance);
@@ -380,11 +466,10 @@ switch ($action) {
     }
 
     case 'get_pending_submissions': {
-        require_admin($db);
+        require_fin_access($db);
         $session = $db->real_escape_string(get_session($db));
         $r = $db->query("
-            SELECT fs.*, s.name AS student_name, s.login_id, s.contact, s.father_name,
-                   c.name AS class_name
+            SELECT fs.*, s.name AS student_name, s.login_id, s.contact, s.father_name, c.name AS class_name
             FROM fin_submissions fs
             JOIN students s ON s.id = fs.student_id
             JOIN classes c ON c.id = s.class_id
@@ -395,13 +480,12 @@ switch ($action) {
     }
 
     case 'get_all_submissions': {
-        require_admin($db);
+        require_fin_access($db);
         $session = $db->real_escape_string(get_session($db));
         $status  = $db->real_escape_string($body['status'] ?? $_GET['status'] ?? 'pending');
         $where   = $status !== 'all' ? "AND fs.status='$status'" : '';
         $r = $db->query("
-            SELECT fs.*, s.name AS student_name, s.login_id, c.name AS class_name,
-                   a.name AS reviewed_by_name
+            SELECT fs.*, s.name AS student_name, s.login_id, c.name AS class_name, a.name AS reviewed_by_name
             FROM fin_submissions fs
             JOIN students s ON s.id = fs.student_id
             JOIN classes c ON c.id = s.class_id
@@ -413,32 +497,30 @@ switch ($action) {
     }
 
     case 'verify_submission': {
-        $admin = require_admin($db);
-        $sub_id  = (int)($body['submission_id'] ?? 0);
+        $admin  = require_fin_access($db);
+        $sub_id = (int)($body['submission_id'] ?? 0);
         $remarks = $db->real_escape_string($body['remarks'] ?? '');
         if (!$sub_id) json_out(['success'=>false,'message'=>'submission_id required']);
-
         $sub = $db->query("SELECT * FROM fin_submissions WHERE id=$sub_id AND status='pending' LIMIT 1")->fetch_assoc();
         if (!$sub) json_out(['success'=>false,'message'=>'Submission not found or already reviewed']);
 
-        $session    = $db->real_escape_string($sub['session']);
-        $sid        = (int)$sub['student_id'];
-        $amount     = (float)$sub['amount_submitted'];
-        $mode       = $db->real_escape_string($sub['payment_mode']);
-        $ref        = $db->real_escape_string($sub['transaction_ref']);
-        $date       = $db->real_escape_string($sub['payment_date']);
+        $session     = $db->real_escape_string($sub['session']);
+        $sid         = (int)$sub['student_id'];
+        $amount      = (float)$sub['amount_submitted'];
+        $mode        = $db->real_escape_string($sub['payment_mode']);
+        $ref         = $db->real_escape_string($sub['transaction_ref']);
+        $date        = $db->real_escape_string($sub['payment_date']);
         $invoice_ids = json_decode($sub['invoice_ids'], true) ?? [];
 
         $receipt_no = next_receipt($db);
         $now = date('Y-m-d H:i:s');
         $db->query("INSERT INTO fin_transactions (receipt_no, student_id, session, amount_paid, payment_mode, reference_no, collected_by, payment_date, remarks, status, submission_id, verified_by, verified_at)
                     VALUES ('$receipt_no', $sid, '$session', $amount, '$mode', '$ref', {$admin['id']}, '$date', '$remarks', 'completed', $sub_id, {$admin['id']}, '$now')");
-        $txn_id = $db->insert_id;
-
+        $txn_id    = $db->insert_id;
         $remaining = $amount;
         foreach ($invoice_ids as $inv_id) {
             $inv_id = (int)$inv_id;
-            $inv = $db->query("SELECT total_due, total_paid FROM fin_invoices WHERE id=$inv_id AND student_id=$sid LIMIT 1")->fetch_assoc();
+            $inv    = $db->query("SELECT total_due, total_paid FROM fin_invoices WHERE id=$inv_id AND student_id=$sid LIMIT 1")->fetch_assoc();
             if (!$inv) continue;
             $balance = $inv['total_due'] - $inv['total_paid'];
             $apply   = min($remaining, $balance);
@@ -455,7 +537,7 @@ switch ($action) {
     }
 
     case 'reject_submission': {
-        $admin = require_admin($db);
+        $admin  = require_fin_access($db);
         $sub_id = (int)($body['submission_id'] ?? 0);
         $reason = $db->real_escape_string($body['reason'] ?? 'Payment details could not be verified');
         if (!$sub_id) json_out(['success'=>false,'message'=>'submission_id required']);
@@ -467,16 +549,13 @@ switch ($action) {
     }
 
     case 'get_defaulters': {
-        require_admin($db);
+        require_fin_access($db);
         $session = $db->real_escape_string(get_session($db));
         $month   = (int)($body['month'] ?? $_GET['month'] ?? date('n'));
-        $year    = (int)($body['year'] ?? $_GET['year'] ?? date('Y'));
+        $year    = (int)($body['year']  ?? $_GET['year']  ?? date('Y'));
         $r = $db->query("
-            SELECT s.id, s.name, s.father_name, s.contact, s.login_id,
-                   c.name AS class_name,
-                   fi.total_due, fi.total_paid,
-                   (fi.total_due - fi.total_paid) AS balance,
-                   fi.status
+            SELECT s.id, s.name, s.father_name, s.contact, s.login_id, c.name AS class_name,
+                   fi.total_due, fi.total_paid, (fi.total_due - fi.total_paid) AS balance, fi.status
             FROM fin_invoices fi
             JOIN students s ON s.id = fi.student_id
             JOIN classes c ON c.id = s.class_id
@@ -488,12 +567,12 @@ switch ($action) {
     }
 
     case 'get_reports': {
-        require_admin($db);
+        require_fin_access($db);
         $type    = $body['type'] ?? $_GET['type'] ?? 'daily';
         $session = $db->real_escape_string(get_session($db));
         if ($type === 'daily') {
             $date = $db->real_escape_string($body['date'] ?? $_GET['date'] ?? date('Y-m-d'));
-            $r = $db->query("
+            $r    = $db->query("
                 SELECT ft.*, s.name AS student_name, c.name AS class_name, a.name AS collected_by_name
                 FROM fin_transactions ft
                 JOIN students s ON s.id = ft.student_id
@@ -506,7 +585,6 @@ switch ($action) {
             $total = array_sum(array_column($txns, 'amount_paid'));
             json_out(['success'=>true,'transactions'=>$txns,'total'=>$total,'date'=>$date]);
         } else {
-            // Session summary by mode
             $r = $db->query("
                 SELECT payment_mode, COUNT(*) AS count, SUM(amount_paid) AS total
                 FROM fin_transactions WHERE session='$session' AND status='completed'
@@ -517,7 +595,7 @@ switch ($action) {
     }
 
     case 'set_session': {
-        require_admin($db, 1);
+        require_superadmin($db);
         $session = $db->real_escape_string(trim($body['session'] ?? ''));
         if (!preg_match('/^\d{4}-\d{4}$/', $session)) json_out(['success'=>false,'message'=>'Invalid session format. Use YYYY-YYYY']);
         $db->query("UPDATE settings SET setting_value='$session' WHERE setting_key='fin_current_session'");
@@ -550,19 +628,23 @@ switch ($action) {
         $total_due  = array_sum(array_column($invoices, 'total_due'));
         $total_paid = array_sum(array_column($invoices, 'total_paid'));
 
-        $arrears_r2 = $db->query("
-            SELECT session,
-                SUM(total_due) AS total_due,
-                SUM(total_paid) AS total_paid,
-                SUM(total_due - total_paid) AS amount_pending
+        $arrears_r = $db->query("
+            SELECT session, SUM(total_due) AS total_due, SUM(total_paid) AS total_paid,
+                   SUM(total_due - total_paid) AS amount_pending
             FROM fin_invoices
             WHERE student_id=$sid AND session != '$session' AND status != 'paid'
             GROUP BY session ORDER BY session ASC
         ");
-        $arrears2       = $arrears_r2 ? $arrears_r2->fetch_all(MYSQLI_ASSOC) : [];
-        $total_arrears2 = (float)array_sum(array_column($arrears2, 'amount_pending'));
+        $arrears       = $arrears_r ? $arrears_r->fetch_all(MYSQLI_ASSOC) : [];
+        $total_arrears = (float)array_sum(array_column($arrears, 'amount_pending'));
 
-        json_out(['success'=>true,'invoices'=>$invoices,'pending_submissions'=>$pending_sub,'arrears'=>$arrears2,'summary'=>['total_due'=>$total_due,'total_paid'=>$total_paid,'balance'=>$total_due-$total_paid,'arrears'=>$total_arrears2,'grand_total'=>($total_due-$total_paid)+$total_arrears2]]);
+        json_out(['success'=>true,'invoices'=>$invoices,'pending_submissions'=>$pending_sub,'arrears'=>$arrears,'summary'=>[
+            'total_due'   => $total_due,
+            'total_paid'  => $total_paid,
+            'balance'     => $total_due - $total_paid,
+            'arrears'     => $total_arrears,
+            'grand_total' => ($total_due - $total_paid) + $total_arrears
+        ]]);
     }
 
     case 'get_my_receipts': {
@@ -571,8 +653,7 @@ switch ($action) {
         $sid     = $student['id'];
         $r = $db->query("
             SELECT ft.id, ft.receipt_no, ft.amount_paid, ft.payment_mode, ft.reference_no,
-                   ft.payment_date, ft.remarks, ft.status, ft.created_at,
-                   a.name AS collected_by_name
+                   ft.payment_date, ft.remarks, ft.status, ft.created_at, a.name AS collected_by_name
             FROM fin_transactions ft
             LEFT JOIN admins a ON a.id = ft.collected_by
             WHERE ft.student_id=$sid AND ft.session='$session' AND ft.status='completed'
@@ -582,7 +663,7 @@ switch ($action) {
     }
 
     case 'submit_online_payment': {
-        $student = require_student($db);
+        $student     = require_student($db);
         $session     = $db->real_escape_string(get_session($db));
         $sid         = $student['id'];
         $invoice_ids = $body['invoice_ids'] ?? [];
@@ -592,11 +673,10 @@ switch ($action) {
         $date        = $db->real_escape_string($body['payment_date'] ?? date('Y-m-d'));
         $remarks     = $db->real_escape_string($body['remarks'] ?? '');
 
-        if (empty($invoice_ids) || $amount <= 0 || !$ref) json_out(['success'=>false,'message'=>'invoice_ids, amount_submitted, and transaction_ref are required']);
+        if (empty($invoice_ids) || $amount <= 0 || !$ref)
+            json_out(['success'=>false,'message'=>'invoice_ids, amount_submitted, and transaction_ref are required']);
 
-        // Check no duplicate pending submission for same ref
-        $safe_ref = $db->real_escape_string($ref);
-        $dup = $db->query("SELECT id FROM fin_submissions WHERE student_id=$sid AND transaction_ref='$safe_ref' AND status='pending' LIMIT 1");
+        $dup = $db->query("SELECT id FROM fin_submissions WHERE student_id=$sid AND transaction_ref='$ref' AND status='pending' LIMIT 1");
         if ($dup->num_rows > 0) json_out(['success'=>false,'message'=>'A submission with this transaction reference is already pending']);
 
         $ids_json = $db->real_escape_string(json_encode(array_map('intval', $invoice_ids)));
@@ -604,7 +684,6 @@ switch ($action) {
                     VALUES ($sid, '$session', '$ids_json', $amount, '$mode', '$ref', '$date', '$remarks', 'pending')");
         $sub_id = $db->insert_id;
 
-        // Push notification to accountant (non-blocking, ignore failure)
         $notify_url = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['PHP_SELF'])) . '/api/notify.php';
         @file_get_contents($notify_url . '?action=fee_submission&student_id=' . $sid . '&amount=' . $amount);
 
