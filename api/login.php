@@ -32,6 +32,12 @@ if ($role === 'student') {
             $c_res = $conn->query("SELECT name FROM classes WHERE id = " . $row['class_id']);
             $c_row = $c_res->fetch_assoc();
             
+            $raw_token_s = bin2hex(random_bytes(32));
+            $token_hash_s = hash('sha256', $raw_token_s);
+            $expiry_s = date('Y-m-d H:i:s', strtotime('+30 days'));
+            $student_id = $row['id'];
+            $conn->query("INSERT INTO login_tokens (user_type, user_id, token_hash, expiry) VALUES ('student', $student_id, '$token_hash_s', '$expiry_s')");
+
             $response = [
                 "status" => "success",
                 "role" => "student",
@@ -42,7 +48,8 @@ if ($role === 'student') {
                     "dob" => $row['dob'],
                     "roll_no" => $row['roll_no'],
                     "class_id" => $row['class_id'],
-                    "class_name" => $c_row['name'] ?? ''
+                    "class_name" => $c_row['name'] ?? '',
+                    "token" => $raw_token_s
                 ]
             ];
         }
@@ -59,6 +66,12 @@ if ($role === 'student') {
     
     if ($result && $row = $result->fetch_assoc()) {
         if (password_verify($password, $row['password_hash'])) {
+            $raw_token_t = bin2hex(random_bytes(32));
+            $token_hash_t = hash('sha256', $raw_token_t);
+            $expiry_t = date('Y-m-d H:i:s', strtotime('+30 days'));
+            $teacher_id = $row['id'];
+            $conn->query("INSERT INTO login_tokens (user_type, user_id, token_hash, expiry) VALUES ('teacher', $teacher_id, '$token_hash_t', '$expiry_t')");
+
             $response = [
                 "status" => "success",
                 "role" => "teacher",
@@ -67,29 +80,37 @@ if ($role === 'student') {
                     "name" => $row['name'],
                     "pic" => $row['profile_pic'],
                     "is_classteacher" => !empty($row['assigned_class_id']),
-                    // CRITICAL: Send the ID and Name so the App knows WHICH class
                     "assigned_class_id" => $row['assigned_class_id'],
-                    "assigned_class_name" => $row['assigned_class_name']
+                    "assigned_class_name" => $row['assigned_class_name'],
+                    "token" => $raw_token_t
                 ]
             ];
         }
     }
-    // --- FIX ENDS HERE ---
 
 } elseif ($role === 'admin') {
     $sql = "SELECT id, name, login_id, password_hash, profile_pic, level FROM admins WHERE login_id='$userid'";
     $result = $conn->query($sql);
-    
+
     if ($result && $row = $result->fetch_assoc()) {
         if (password_verify($password, $row['password_hash'])) {
+
+            // Generate token and save to login_tokens
+            $raw_token = bin2hex(random_bytes(32));
+            $token_hash = hash('sha256', $raw_token);
+            $expiry = date('Y-m-d H:i:s', strtotime('+30 days'));
+            $admin_id = $row['id'];
+            $conn->query("INSERT INTO login_tokens (user_type, user_id, token_hash, expiry) VALUES ('admin', $admin_id, '$token_hash', '$expiry')");
+
             $response = [
                 "status" => "success",
-                "role" => "admin",
-                "user" => [
-                    "id" => $row['id'],
-                    "name" => $row['name'],
-                    "pic" => $row['profile_pic'],
-                    "level" => $row['level']
+                "role"   => "admin",
+                "user"   => [
+                    "id"    => $row['id'],
+                    "name"  => $row['name'],
+                    "pic"   => $row['profile_pic'],
+                    "level" => $row['level'],
+                    "token" => $raw_token  
                 ]
             ];
         }

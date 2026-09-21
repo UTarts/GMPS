@@ -1,62 +1,93 @@
 <?php
-// CRITICAL: Start output buffering immediately to catch random spaces/warnings
-ob_start(); 
-error_reporting(0);
-
+// 1. FORCE HEADERS IMMEDIATELY 
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+
+// Handle browser preflight checks
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// 2. CATCH ERRORS SAFELY & SEND TO FRONTEND
+error_reporting(E_ALL);
+ini_set('display_errors', 0); 
+
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        http_response_code(200);
+        echo json_encode([
+            'status' => 'error', 
+            'message' => 'PHP FATAL ERROR: ' . $error['message'] . ' in ' . basename($error['file']) . ' on line ' . $error['line']
+        ]);
+        exit;
+    }
+});
+
+// 3. START BUFFER TO TRAP RANDOM SPACES
+ob_start(); 
+
+if (!file_exists('config.php')) {
+    ob_clean();
+    echo json_encode(['status' => 'error', 'message' => 'config.php not found']);
+    exit;
+}
 
 require_once 'config.php';
 
-$action = $_POST['action'] ?? '';
-
-// Helper to format file sizes
-function formatSizeUnits($bytes) {
-    if ($bytes >= 1048576) { return number_format($bytes / 1048576, 2) . ' MB'; }
-    elseif ($bytes >= 1024) { return number_format($bytes / 1024, 2) . ' KB'; }
-    elseif ($bytes > 1) { return $bytes . ' bytes'; }
-    elseif ($bytes == 1) { return $bytes . ' byte'; }
-    return '0 bytes';
+if (!isset($conn) || (isset($conn->connect_error) && $conn->connect_error)) {
+    ob_clean();
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed']);
+    exit;
 }
 
+$action = isset($_POST['action']) ? $_POST['action'] : '';
+
+if (!function_exists('formatSizeUnits')) {
+    function formatSizeUnits($bytes) {
+        if ($bytes >= 1048576) { return number_format($bytes / 1048576, 2) . ' MB'; }
+        elseif ($bytes >= 1024) { return number_format($bytes / 1024, 2) . ' KB'; }
+        elseif ($bytes > 1) { return $bytes . ' bytes'; }
+        elseif ($bytes == 1) { return $bytes . ' byte'; }
+        return '0 bytes';
+    }
+}
+
+// ==========================================
 // 1. FETCH INITIAL DATA
+// ==========================================
 if ($action === 'fetch_init') {
-    $role = strtolower(trim($_POST['role'] ?? ''));
-    $user_id = (int)($_POST['user_id'] ?? 0);
-    $class_id = (int)($_POST['class_id'] ?? 0); 
+    $role = strtolower(trim(isset($_POST['role']) ? $_POST['role'] : ''));
+    $user_id = (int)(isset($_POST['user_id']) ? $_POST['user_id'] : 0);
+    $class_id = (int)(isset($_POST['class_id']) ? $_POST['class_id'] : 0); 
+    $explore_mode = isset($_POST['explore_mode']) ? $_POST['explore_mode'] : 'false';
     
     $response = ['status' => 'success', 'classes' => [], 'subjects' => [], 'resources' => []];
     
-    // FETCH SUBJECTS SAFELY
     $s_res = $conn->query("SELECT code, name FROM subjects ORDER BY name ASC");
-    if ($s_res) { 
-        while($s = $s_res->fetch_assoc()) $response['subjects'][] = $s; 
-    }
+    if ($s_res) { while($s = $s_res->fetch_assoc()) $response['subjects'][] = $s; }
 
-    // FETCH CLASSES SAFELY
     $c_res = $conn->query("SELECT id, name FROM classes ORDER BY id ASC");
-    if ($c_res) { 
-        while($c = $c_res->fetch_assoc()) $response['classes'][] = $c; 
-    }
+    if ($c_res) { while($c = $c_res->fetch_assoc()) $response['classes'][] = $c; }
 
-    // FETCH RESOURCES SAFELY
-    if ($role === 'teacher' || $role === 'admin') {
+    // FIXED: Added COLLATE utf8mb4_general_ci to bypass the database mismatch crash
+    if ($role === 'teacher' || $role === 'admin' || $explore_mode === 'true') {
         $r_sql = "
             SELECT r.*, t.name as teacher_name, t.profile_pic as teacher_pic, s.name as subject_name 
             FROM library_resources r 
             LEFT JOIN teachers t ON r.teacher_id = t.id 
-            LEFT JOIN subjects s ON r.subject_code = s.code
+            LEFT JOIN subjects s ON r.subject_code COLLATE utf8mb4_general_ci = s.code 
             ORDER BY r.created_at DESC
         ";
     } else {
-        // Students ONLY get their class resources
         $r_sql = "
             SELECT r.*, t.name as teacher_name, t.profile_pic as teacher_pic, s.name as subject_name 
             FROM library_resources r 
             LEFT JOIN teachers t ON r.teacher_id = t.id 
-            LEFT JOIN subjects s ON r.subject_code = s.code
-            WHERE FIND_IN_SET('$class_id', r.class_ids) > 0 
+            LEFT JOIN subjects s ON r.subject_code COLLATE utf8mb4_general_ci = s.code 
+            WHERE FIND_IN_SET('$class_id', r.class_ids) > 0 OR FIND_IN_SET('ALL', r.class_ids) > 0 
             ORDER BY r.created_at DESC
         ";
     }
@@ -69,17 +100,15 @@ if ($action === 'fetch_init') {
         }
     }
     
-    // CRITICAL: Safely output JSON
-    $jsonOutput = json_encode($response);
-    ob_clean(); // Wipe the buffer of any warnings or spaces
-    echo $jsonOutput;
+    ob_clean();
+    echo json_encode($response);
     exit;
 }
 
+// ==========================================
 // 2. UPLOAD RESOURCE
+// ==========================================
 if ($action === 'upload_resource') {
-    require_once 'NotificationService.php'; 
-    
     $teacher_id = (int)$_POST['teacher_id'];
     $teacher_name = $conn->real_escape_string($_POST['teacher_name']);
     $title = $conn->real_escape_string($_POST['title']);
@@ -89,7 +118,7 @@ if ($action === 'upload_resource') {
     
     if (empty($_FILES['file']['tmp_name'])) {
         ob_clean();
-        echo json_encode(['status'=>'error', 'message'=>'File is required']);
+        echo json_encode(['status'=>'error', 'message'=>'File is required.']);
         exit;
     }
 
@@ -110,21 +139,34 @@ if ($action === 'upload_resource') {
                 VALUES ($teacher_id, '$title', '$desc', '$subject_code', '$file_url', '$ext', '$file_size', '$class_ids')";
                 
         if($conn->query($sql)) {
-            try {
-                $notif = new NotificationService($conn);
-                $classes_array = explode(',', $class_ids);
-                $push_title = "📚 Digital Library Update";
-                $push_body = "$teacher_name uploaded a new resource: $title.";
-                foreach($classes_array as $cid) {
-                    $notif->sendToClass($cid, $push_title, $push_body, ['route' => '/library']); 
-                }
-            } catch(Exception $e) { }
-
+            if (file_exists('NotificationService.php')) {
+                try {
+                    require_once 'NotificationService.php'; 
+                    if (class_exists('NotificationService')) {
+                        $notif = new NotificationService($conn);
+                        $push_title = "📚 Digital Library Update";
+                        $push_body = "$teacher_name uploaded a new resource: $title.";
+                        
+                        if ($class_ids === 'ALL') {
+                            if (method_exists($notif, 'broadcastToAll')) {
+                                $notif->broadcastToAll($push_title, $push_body, ['route' => '/library']);
+                            }
+                        } else {
+                            if (method_exists($notif, 'sendToClass')) {
+                                $classes_array = explode(',', $class_ids);
+                                foreach($classes_array as $cid) {
+                                    $notif->sendToClass($cid, $push_title, $push_body, ['route' => '/library']); 
+                                }
+                            }
+                        }
+                    }
+                } catch(Exception $e) { }
+            }
             ob_clean();
             echo json_encode(['status'=>'success']);
         } else {
             ob_clean();
-            echo json_encode(['status'=>'error', 'message'=>'DB Error']);
+            echo json_encode(['status'=>'error', 'message'=>'DB Error: ' . $conn->error]);
         }
     } else {
         ob_clean();
@@ -133,7 +175,9 @@ if ($action === 'upload_resource') {
     exit;
 }
 
+// ==========================================
 // 3. DELETE RESOURCE
+// ==========================================
 if ($action === 'delete_resource') {
     $id = (int)$_POST['id'];
     $teacher_id = (int)$_POST['teacher_id']; 
@@ -151,4 +195,8 @@ if ($action === 'delete_resource') {
     }
     exit;
 }
+
+ob_clean();
+echo json_encode(['status' => 'error', 'message' => 'No valid action provided.']);
+exit;
 ?>

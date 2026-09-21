@@ -9,7 +9,7 @@ header('Content-Type: application/json');
 require_once 'config.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
-
+$input = json_decode(file_get_contents("php://input"), true);
 // --- HELPER: File Upload ---
 function uploadFile($fileKey) {
     if (!isset($_FILES[$fileKey]) || $_FILES[$fileKey]['error'] !== UPLOAD_ERR_OK) return null;
@@ -47,7 +47,18 @@ if ($action === 'delete_suggestion') {
 
 // 3. STUDENTS MANAGEMENT
 if ($action === 'get_classes') {
-    $res = $conn->query("SELECT id, name FROM classes ORDER BY sort_order");
+    // Upgraded to count active students per class automatically
+    $res = $conn->query("SELECT c.id, c.name, (SELECT COUNT(*) FROM students WHERE class_id=c.id AND status='active') as student_count FROM classes c ORDER BY c.sort_order");
+    $data = [];
+    while($r = $res->fetch_assoc()) $data[] = $r;
+    echo json_encode(['status' => 'success', 'data' => $data]);
+    exit;
+}
+
+// NEW: Global Student Search Endpoint
+if ($action === 'search_students') {
+    $q = $conn->real_escape_string($_GET['q'] ?? '');
+    $res = $conn->query("SELECT s.id, s.name, s.father_name, s.profile_pic, c.name as class_name FROM students s JOIN classes c ON s.class_id = c.id WHERE s.status='active' AND s.name LIKE '%$q%' LIMIT 8");
     $data = [];
     while($r = $res->fetch_assoc()) $data[] = $r;
     echo json_encode(['status' => 'success', 'data' => $data]);
@@ -261,25 +272,70 @@ if ($action === 'save_teacher') {
 }
 
 if ($action === 'add_teacher') {
-    $name = $conn->real_escape_string($_POST['name']);
-    $login = $conn->real_escape_string($_POST['login_id']);
-    $pass = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $contact = $conn->real_escape_string($_POST['contact']);
+    $name = $conn->real_escape_string($_POST['name'] ?? '');
     $class_id = !empty($_POST['assigned_class_id']) ? (int)$_POST['assigned_class_id'] : null;
-    $img = uploadFile('image') ?? 'GMPSimages/default_user.png';
-    
-    $stmt = $conn->prepare("INSERT INTO teachers (name, login_id, password_hash, contact, profile_pic, assigned_class_id) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssssi", $name, $login, $pass, $contact, $img, $class_id);
-    
-    if($stmt->execute()) {
-        $tid = $stmt->insert_id;
-        if (!empty($_POST['subject_code'])) {
-            $scode = $conn->real_escape_string($_POST['subject_code']);
-            $conn->query("INSERT INTO teacher_subjects (teacher_id, subject_code) VALUES ($tid, '$scode')");
+
+    // --- NEW: Check for Existing Class Teacher ---
+    if ($class_id) {
+        $check = $conn->query("SELECT name FROM teachers WHERE assigned_class_id = $class_id LIMIT 1");
+        if ($check->num_rows > 0) {
+            $existing = $check->fetch_assoc();
+            echo json_encode(['status' => 'error', 'message' => "Class already has a teacher: " . $existing['name']]);
+            exit;
         }
-        echo json_encode(['status' => 'success']);
-    } else {
-        echo json_encode(['status' => 'error']);
+    }
+    try {
+        // 1. Gather raw data safely
+        $name = $_POST['name'] ?? '';
+        $login = $_POST['login_id'] ?? '';
+        $pass = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
+        $contact = $_POST['contact'] ?? '';
+        
+        // If empty, explicitly set to PHP null. Prepared statements will convert this to SQL NULL safely.
+        $class_id = !empty($_POST['assigned_class_id']) ? (int)$_POST['assigned_class_id'] : null;
+        
+        // 2. Handle Image
+        $img = uploadFile('image');
+        if (!$img) {
+            $img = 'GMPSimages/default_user.png';
+        }
+        
+        // 3. Prepare the SQL
+        $sql = "INSERT INTO teachers (name, login_id, password_hash, contact, profile_pic, assigned_class_id) VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        
+        // If the prepare fails, catch it BEFORE it causes a Fatal Crash
+        if (!$stmt) {
+            echo json_encode(['status' => 'error', 'message' => 'SQL Prepare Failed: ' . $conn->error]);
+            exit;
+        }
+        
+        // Bind the parameters ("sssssi" = 5 strings, 1 integer)
+        $stmt->bind_param("sssssi", $name, $login, $pass, $contact, $img, $class_id);
+        
+        // 4. Execute and Check
+        if ($stmt->execute()) {
+            $tid = $stmt->insert_id;
+            
+            // Insert Subject Mapping if applicable
+            if (!empty($_POST['subject_code'])) {
+                $scode = $_POST['subject_code'];
+                $sub_stmt = $conn->prepare("INSERT INTO teacher_subjects (teacher_id, subject_code) VALUES (?, ?)");
+                if ($sub_stmt) {
+                    $sub_stmt->bind_param("is", $tid, $scode);
+                    $sub_stmt->execute();
+                }
+            }
+            
+            echo json_encode(['status' => 'success']);
+        } else {
+            // Send exact MySQL rejection reason to the frontend
+            echo json_encode(['status' => 'error', 'message' => 'DB Rejection: ' . $stmt->error]);
+        }
+        
+    } catch (Throwable $e) {
+        // Catch any PHP Fatal errors or exceptions and output as JSON
+        echo json_encode(['status' => 'error', 'message' => 'PHP Crash: ' . $e->getMessage()]);
     }
     exit;
 }
@@ -340,6 +396,107 @@ if ($action === 'add_admin') {
 if ($action === 'delete_admin') {
     $id = (int)$_POST['id'];
     $conn->query("DELETE FROM admins WHERE id=$id");
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+// ============================================================================
+// --- PHASE 3: STAFF & SALARY MANAGEMENT ---
+// ============================================================================
+
+// --- STAFF ROLES (Just Titles) ---
+if ($action === 'get_staff_roles') {
+    $r = $conn->query("SELECT * FROM staff_roles ORDER BY title");
+    $data = [];
+    if($r) while($row = $r->fetch_assoc()) $data[] = $row;
+    echo json_encode(['status' => 'success', 'data' => $data]);
+    exit;
+}
+if ($action === 'add_staff_role') {
+    $title = $conn->real_escape_string($_POST['title']);
+    $conn->query("INSERT INTO staff_roles (title) VALUES ('$title')");
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+if ($action === 'delete_staff_role') {
+    $id = (int)$_POST['id'];
+    $conn->query("DELETE FROM staff_roles WHERE id=$id");
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
+// --- STAFF DIRECTORY ---
+if ($action === 'get_staff_users') {
+    $r = $conn->query("SELECT s.id, s.name, s.login_id, s.contact, r.title as role_name FROM staff_directory s JOIN staff_roles r ON s.role_id = r.id WHERE s.status='active' ORDER BY s.name");
+    $data = [];
+    if($r) while($row = $r->fetch_assoc()) $data[] = $row;
+    echo json_encode(['status' => 'success', 'data' => $data]);
+    exit;
+}
+if ($action === 'add_staff_user') {
+    $name = $conn->real_escape_string($_POST['name']);
+    $role = (int)$_POST['role_id'];
+    $login = $conn->real_escape_string($_POST['login_id']);
+    $pass = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $contact = $conn->real_escape_string($_POST['contact'] ?? '');
+    
+    $conn->query("INSERT INTO staff_directory (name, role_id, login_id, password_hash, contact) VALUES ('$name', $role, '$login', '$pass', '$contact')");
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+if ($action === 'delete_staff_user') {
+    $id = (int)$_POST['id'];
+    $conn->query("DELETE FROM staff_directory WHERE id=$id");
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
+// --- MASTER SALARY MODULE ---
+if ($action === 'get_all_salaries') {
+    // Fetch Teachers
+    $t_res = $conn->query("SELECT id, name, 'teacher' as user_type FROM teachers ORDER BY name");
+    // Fetch Staff
+    $s_res = $conn->query("SELECT s.id, s.name, 'staff' as user_type, r.title as subtitle FROM staff_directory s JOIN staff_roles r ON s.role_id = r.id ORDER BY s.name");
+    // Fetch Admins
+    $a_res = $conn->query("SELECT id, name, 'admin' as user_type FROM admins ORDER BY name");
+    
+    // Fetch mapped salaries
+    $sal_res = $conn->query("SELECT * FROM user_salaries");
+    $salaries = [];
+    if($sal_res) while($row = $sal_res->fetch_assoc()) {
+        $salaries[$row['user_type'] . '_' . $row['user_id']] = (float)$row['monthly_salary'];
+    }
+
+    $users = [];
+    if($t_res) while($row = $t_res->fetch_assoc()) {
+        $row['monthly_salary'] = $salaries['teacher_'.$row['id']] ?? 0;
+        $users[] = $row;
+    }
+    if($s_res) while($row = $s_res->fetch_assoc()) {
+        $row['monthly_salary'] = $salaries['staff_'.$row['id']] ?? 0;
+        $users[] = $row;
+    }
+    if($a_res) while($row = $a_res->fetch_assoc()) {
+        $row['monthly_salary'] = $salaries['admin_'.$row['id']] ?? 0;
+        $users[] = $row;
+    }
+
+    echo json_encode(['status' => 'success', 'data' => $users]);
+    exit;
+}
+
+if ($action === 'save_salaries') {
+    $updates = json_decode($_POST['updates'], true);
+    if (!empty($updates)) {
+        foreach ($updates as $u) {
+            $uid = (int)$u['user_id'];
+            $type = $conn->real_escape_string($u['user_type']);
+            $salary = (float)$u['monthly_salary'];
+            
+            $conn->query("INSERT INTO user_salaries (user_id, user_type, monthly_salary) 
+                          VALUES ($uid, '$type', $salary) 
+                          ON DUPLICATE KEY UPDATE monthly_salary = $salary");
+        }
+    }
     echo json_encode(['status' => 'success']);
     exit;
 }

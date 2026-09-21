@@ -332,7 +332,7 @@ if ($action === 'fetch_student_deep') {
     $e_res = $conn->query("SELECT id, name, max_marks FROM exams");
     while($ex = $e_res->fetch_assoc()) {
         $eid = $ex['id'];
-        $m_res = $conn->query("SELECT s.code, s.name, m.marks_obtained FROM marks m JOIN subjects s ON m.subject_code=s.code WHERE m.student_id=$sid AND m.exam_id=$eid");
+        $m_res = $conn->query("SELECT s.code, s.name, m.exam_marks as marks_obtained FROM marks m JOIN subjects s ON m.subject_code=s.code WHERE m.student_id=$sid AND m.exam_id=$eid");
         $subs = [];
         while($m = $m_res->fetch_assoc()) $subs[] = $m;
         $ex['subjects'] = $subs;
@@ -365,7 +365,7 @@ if ($action === 'save_student_deep') {
     
     // Save Marks (JSON: { exam_id: { sub_code: mark } })
     $marks_data = json_decode($_POST['marks'], true);
-    $stmt = $conn->prepare("INSERT INTO marks (student_id, exam_id, subject_code, marks_obtained) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE marks_obtained=?");
+    $stmt = $conn->prepare("INSERT INTO marks (student_id, exam_id, subject_code, exam_marks) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE exam_marks=?");
     foreach($marks_data as $eid => $subs) {
         foreach($subs as $code => $val) {
             $val = (int)$val;
@@ -411,7 +411,7 @@ if ($action === 'fetch_student_full_detail') {
     $exams = $conn->query("SELECT id, name, max_marks FROM exams");
     while($ex = $exams->fetch_assoc()) {
         $eid = $ex['id'];
-        $m_res = $conn->query("SELECT s.code, s.name, m.marks_obtained FROM marks m JOIN subjects s ON m.subject_code = s.code WHERE m.student_id = $sid AND m.exam_id = $eid");
+        $m_res = $conn->query("SELECT s.code, s.name, m.exam_marks as marks_obtained FROM marks m JOIN subjects s ON m.subject_code = s.code WHERE m.student_id = $sid AND m.exam_id = $eid");
         $subs = [];
         while($sub = $m_res->fetch_assoc()) $subs[] = $sub;
         if(!empty($subs)) {
@@ -460,7 +460,7 @@ if ($action === 'update_student_marks') {
     $eid = (int)$_POST['exam_id'];
     $marks = json_decode($_POST['marks'], true); // { "ENG": 20, "MTH": 19 }
     
-    $stmt = $conn->prepare("INSERT INTO marks (student_id, exam_id, subject_code, marks_obtained) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE marks_obtained=?");
+    $stmt = $conn->prepare("INSERT INTO marks (student_id, exam_id, subject_code, exam_marks) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE exam_marks=?");
     foreach($marks as $code => $val) {
         $val = (int)$val;
         $stmt->bind_param("iisii", $sid, $eid, $code, $val, $val);

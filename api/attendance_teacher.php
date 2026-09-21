@@ -194,7 +194,11 @@ if ($action === 'mark_holiday') {
         }
     }
 
-    // 4. Send the Push Notification
+    // 4. Calculate present and absent counts
+    $present_count = $stats['present'] ?? 0;
+    $absent_count = $stats['absent'] ?? 0;
+
+    // 5. Send the Push Notification
     if (count($admin_ids) > 0) {
         $notifier = new NotificationService($conn);
         $title = "Attendance: Class $class_name ✅";
